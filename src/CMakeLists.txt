@@ -1,7 +1,10 @@
 rock_library(camera_ids
-    SOURCES Dummy.cpp
-    HEADERS Dummy.hpp)
+    SOURCES CamIds.cpp
+    HEADERS CamIds.h
+    DEPS_PKGCONFIG base-types camera_interface)
 
-rock_executable(camera_ids_bin Main.cpp
+SET(module_name ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} ueye_api)
+
+rock_executable(test_bin test.cpp
     DEPS camera_ids)
-

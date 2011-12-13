@@ -1,18 +1,21 @@
 <package>
+  
   <description brief="Driver for IDS cameras.">
   Driver for IDS cameras.
   </description>
+  
   <author>Remus Claudiu Dumitru/r.dumitru@jacobs-university.de</author>
   <license></license>
   <url>http://</url>
   <logo>http://</logo>
-  <!--
-   To add any dependencies use the depend tag
-  <depend package="dummy-dependency-0" />
-	...
-  <depend package="dummy-dependency-n-1" />
-  <depend package="dummy-dependency-n" />
-  -->
+  
   <depend package="base/types" />
   <depend package="drivers/camera_interface" />
+
+  <export>
+    <cpp cflags="" lflags="">
+  </export>
+
+  <versioncontrol type="git" url="" />
+  
 </package>
