@@ -5,20 +5,33 @@ using namespace std;
 using namespace camera;
 
 int main() {
-    CamIds cam;
+    CamIds camusb, cameth;
 
     std::vector<CamInfo> camera_list;
 
     cout << "Number of cameras: "
-            << cam.listCameras(camera_list)
+            << cameth.listCameras(camera_list)
             << endl;
 
+    showCamInfos(camera_list);
 
     if (camera_list.size() >= 1) {
-        cam.open(camera_list[0]);
+        cameth.open(camera_list[1]);
+        camusb.open(camera_list[0]);
     }
 
-    std::cout << "Is it open: " << cam.isOpen() << std::endl;
+    camera_list.clear();
+
+//    const CamInfo* camPt = cam.getCameraInfo();
+//
+//    if (camPt != NULL) {
+//        camera_list.push_back(*camPt);
+//    }
+
+//    showCamInfos(camera_list);
+
+    std::cout << "Is it open eth: " << cameth.isOpen() << std::endl;
+    std::cout << "Is it open usb: " << camusb.isOpen() << std::endl;
 
     return 0;
 }

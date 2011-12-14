@@ -2,7 +2,7 @@
   * Definition of the IDS camera driver.
   * @file CamIds.h
   * @author Remus Claudiu Dumitru <r.dumitru@jacobs-university.de>
-  * @date Thu Dec  8 13:25:02 CET 2011
+  * @date Thu Dec 8 13:25:02 CET 2011
   */
 
 #ifndef _CAMIDS_H
@@ -28,12 +28,25 @@ namespace camera {
 class CamIds : public CamInterface {
 private:
     /**
-     * Handler for the current IDS camera.
+     * Camera handle for the current open IDS camera.
      */
-    HIDS* hCam;
+    HIDS *hCam;
+
+    /**
+     * Camera information storage.
+     */
+    CamInfo *hCamInfo;
+
+    /**
+     * Retrieves camera information for a single camera.
+     * @warning camera must be initialized when this method is used
+     * @param uEyeCamInfo the ueye camera information to be extracted
+     * @param camHandle a pointer to the camera handler that is should be initialized
+     * @return a filled CamInfo struct
+     */
+    CamInfo fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) const;
 
 public:
-    int k;
     //======================================================================
     // Inherited methods.
     //======================================================================
@@ -66,7 +79,7 @@ public:
      * @param structure where the camera information is stored
      * @return returns false if no camera matches
      */
-    //        bool findCamera(const CamInfo& pattern, CamInfo& cam) const;
+//        bool findCamera(const CamInfo& pattern, CamInfo& cam) const;
 
     /**
      * Counts the number of available cameras.
@@ -76,6 +89,9 @@ public:
 
     /**
      * Opens a specific camera.
+     * @warning opening the last camera in a list after calling listCameras() \
+     *      will not succeed; the daemon requires some time to close the camera \
+     *      after is_ExitCamera()
      * @param cam details about the camera to be opened
      * @param mode one of the defined access modes
      * @return true if camera has been opened
@@ -103,30 +119,38 @@ public:
      */
     bool isOpen() const;
 
-//        /**
-//          * Returns a pointer to CamInfo of the opened camera.
-//          */
-//        const CamInfo * getCameraInfo() const;
+    /**
+     * Returns a pointer to CamInfo of the opened camera.
+     * @return information about a camera, or NULL if camera not initialized
+     */
+    const CamInfo* getCameraInfo() const;
 
-//        /**
-//          * Closes the camera.
-//          */
-//        bool close();
+    /**
+     * Closes the camera.
+     * @return true if camera has been closed
+     */
+    bool close();
 
-//        /**
-//          * Starts capturing into a buffer.
-//          */
-//        bool grab(const GrabMode mode = SingleFrame, const int buffer_len = 1);
+    /**
+     * Starts capturing into a buffer.
+     * @param mode grab mode
+     * @param buffer_length size of the buffer
+     * @return true if successful
+     */
+    bool grab(const GrabMode mode = SingleFrame, const int buffer_len = 1);
 
-//        /**
-//          * Retrieves the next frame from the buffer(no data are copied).
-//          */
-//        bool retrieveFrame(base::samples::frame::Frame& frame, const int timeout = 1000);
+    /**
+     * Retrieves the next frame from the buffer(no data are copied).
+     * @param frame destination frame
+     * @param timeout timeout
+     */
+    bool retrieveFrame(base::samples::frame::Frame& frame, const int timeout = 1000);
 
-//        /**
-//          * Checks if a frame can be retrieved from the buffer.
-//          */
-//        bool isFrameAvailable();
+    /**
+     * Checks if a frame can be retrieved from the buffer.
+     * @return true if a new frame is available
+     */
+    bool isFrameAvailable();
 
 //        /**
 //          * Skips all buffered frame beside the last one.
@@ -203,21 +227,29 @@ public:
 //          */
 //        CamInterface&  operator>>(base::samples::frame::Frame& frame);
 
-//        /**
-//          * Sets the frame settings size, mode and color depth.
-//          */
-//        bool setFrameSettings(const base::samples::frame::frame_size_t size, const base::samples::frame::frame_mode_t mode, const uint8_t color_depth, const bool resize_frames = true);
+    /**
+     * Sets the frame settings size, mode and color depth.
+     * @param size frame size
+     * @param mode color mode
+     * @param color_depth color depth
+     * @param resize_frames boolean value to control whether or not to resize frames
+     * @return true if successful
+     */
+    bool setFrameSettings(const base::samples::frame::frame_size_t size, const base::samples::frame::frame_mode_t mode, const uint8_t color_depth, const bool resize_frames = true);
 
 //        /**
 //          * Sets the camera frame settings to the values of the frame.
 //          */
 //        bool setFrameSettings(const base::samples::frame::Frame& frame, const bool resize_frames = true);
 
-//
-//        /**
-//          * Gets the actual frame settings size, mode and color depth.
-//          */
-//        bool getFrameSettings(base::samples::frame::frame_size_t& size, base::samples::frame::frame_mode_t& mode, uint8_t& color_depth);
+    /**
+     * Gets the actual frame settings size, mode and color depth.
+     * @param size output destination size
+     * @param mode output destination mode
+     * @param color_depth output destination color_depth
+     * @return true if successful
+     */
+    bool getFrameSettings(base::samples::frame::frame_size_t& size, base::samples::frame::frame_mode_t& mode, uint8_t& color_depth);
 
 //
 //        /**
