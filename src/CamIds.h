@@ -8,18 +8,24 @@
 #ifndef _CAMIDS_H
 #define _CAMIDS_H
 
-// this is where the ROCK camera interface is defined
-#include "camera_interface/CamInterface.h"
+
+#include "camera_interface/CamInterface.h"  // this is where the ROCK camera interface is defined
 #include "camera_interface/CamInfoUtils.h"
-//#include <CamInterface.h>         // use only for eclipse with -I
-//#include <CamInfoUtils.h>         // use only for eclipse with -I
+//#include <CamInterface.h>                 // use only for eclipse with -I
+//#include <CamInfoUtils.h>                 // use only for eclipse with -I
 
-// container for video frames
-#include "base/samples/frame.h"
-//#include <base/samples/frame.h>   // use only for eclipse with -I
+#include "base/samples/frame.h"             // container for video frames
+//#include <base/samples/frame.h>           // use only for eclipse with -I
 
-// API for the IDS cameras
-#include <ueye.h>
+#include <ueye.h>                           // API for the IDS cameras
+
+// a single ueye frame
+typedef struct _UEYE_IMAGE {
+    char *pBuf;                 // memory location of the frame
+    INT nImageID;               // id of the frame
+    INT nImageSeqNum;           // frame sequence number
+    INT nBufferSize;            // the buffer size in bytes
+} UEYE_IMAGE;
 
 namespace camera {
 /**
@@ -30,12 +36,22 @@ private:
     /**
      * Camera handle for the current open IDS camera.
      */
-    HIDS *hCam;
+    HIDS *pCam_;
 
     /**
      * Camera information storage.
      */
-    CamInfo *hCamInfo;
+    CamInfo *pCamInfo_;
+
+    /**
+     * This is where we keep the frames.
+     */
+    UEYE_IMAGE *pFrameBuf_;
+
+    /**
+     * Number of frames in the buffer.
+     */
+    unsigned int nFrameBufLen_;
 
     /**
      * Retrieves camera information for a single camera.
@@ -142,7 +158,7 @@ public:
     /**
      * Retrieves the next frame from the buffer(no data are copied).
      * @param frame destination frame
-     * @param timeout timeout
+     * @param timeout timeout to wait for a frame in miliseconds
      */
     bool retrieveFrame(base::samples::frame::Frame& frame, const int timeout = 1000);
 
