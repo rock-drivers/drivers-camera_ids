@@ -187,7 +187,8 @@ CamIds::CamIds() {
     this->pCam_          = NULL;
     this->pCamInfo_      = NULL;
     this->pFrameBuf_     = NULL;
-    this->nFrameBufLen_ = 0;
+    this->nFrameBufLen_  = 0;
+    this->nSeqCount_     = 0;
 }
 
 //==============================================================================
@@ -195,7 +196,8 @@ CamIds::CamIds(const CamIds& other) {
     this->pCam_          = other.pCam_;
     this->pCamInfo_      = other.pCamInfo_;
     this->pFrameBuf_     = other.pFrameBuf_;
-    this->nFrameBufLen_ = other.nFrameBufLen_;
+    this->nFrameBufLen_  = other.nFrameBufLen_;
+    this->nSeqCount_     = other.nSeqCount_;
 }
 
 //==============================================================================
@@ -416,7 +418,7 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
                 << std::endl;
 
         // color depth in bytes, set default RGB24
-        if (is_SetColorMode(*pCam_, IS_CM_RGB8_PACKED) != IS_SUCCESS) {
+        if (is_SetColorMode(*pCam_, IS_CM_BGR8_PACKED) != IS_SUCCESS) {
             std::cerr << "** Unable to set color mode for camera "
                     << cam.unique_id << " (" << cam.display_name << ")"
                     << std::endl;
@@ -437,6 +439,30 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
 
         // set the area of interest of the camera
         is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI));
+
+        // set the trigger mode to software, image acquired when calling is_FreezeVideo()
+        if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
+            std::cerr << "** Unable to set trigger mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << " while attempting to open"
+                    << std::endl;
+            this->close();
+            return false;
+        }
+
+        double newFps;
+        if (is_SetFrameRate(*this->pCam_, 30, &newFps) != IS_SUCCESS) {
+            std::cerr << "** Unable to set frame rate for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << " while attempting to open"
+                    << std::endl;
+            this->close();
+            return false;
+        }
+
+        std::cout << "== Frame rate set to " << newFps << std::endl;
 
         // initial grab mode set to stop
         this->act_grab_mode_ = Stop;
@@ -475,16 +501,25 @@ const CamInfo* CamIds::getCameraInfo() const {
 
 //==============================================================================
 bool CamIds::close() {
-    //TODO call all exiting functions here and in the destructor, depending on active status
-
     // release all memory
     std::cout << "== Closing camera" << std::endl;
+
+    // clear the queue, stop live video
+    if (this->act_grab_mode_ == Continuously) {
+        is_StopLiveVideo(*this->pCam_, IS_WAIT);
+        is_ClearSequence(*this->pCam_);
+        is_ExitImageQueue(*this->pCam_);
+    }
 
     // free the image memory allocated
     for (int i = 0; i < this->nFrameBufLen_; ++i) {
         is_FreeImageMem(*this->pCam_,
                 this->pFrameBuf_[i].pBuf, this->pFrameBuf_[i].nImageID);
     }
+
+//    if (this->act_grab_mode_ == Continuously) {
+//        is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
+//    }
 
     if (this->pFrameBuf_ != NULL) {
         delete[] pFrameBuf_;
@@ -592,7 +627,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 
         // disable events and exit the image queue
         is_ClearSequence(*this->pCam_);
-        is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
+//        is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
         is_ExitImageQueue(*this->pCam_);
 
         // free the image memory allocated
@@ -670,17 +705,6 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
                 return false;
             }
         }
-
-        // set the trigger mode to software, image acquired when calling is_FreezeVideo()
-        if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_SOFTWARE) != IS_SUCCESS) {
-            std::cerr << "** Unable to set trigger mode for camera "
-                    << this->pCamInfo_->unique_id
-                    << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to grab"
-                    << std::endl;
-            this->close();
-            return false;
-        }
         break;
 
     //--------------------------------------------------------------------------
@@ -729,7 +753,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
         }
 
         // install event handling
-        is_EnableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
+//        is_EnableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
 
         // enable queueing mode
         is_InitImageQueue(*this->pCam_, 0);
@@ -753,6 +777,16 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 
 //==============================================================================
 bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout) {
+    // a return value dummy integer to be used around the method
+    INT retVal;
+
+    // used to retrieve data about next buffered frame
+    char* pTempBuf;
+    int nTempImageID;
+
+    // used to retrieve more info on an image
+    UEYEIMAGEINFO imgInfo;
+
     // depending on the active grabbing mode, acquire frame
     switch (this->act_grab_mode_) {
     case Stop:
@@ -762,10 +796,18 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         break;
     case SingleFrame:
         // freeze the video for the single frame acquisition
-        is_FreezeVideo(*this->pCam_, timeout);
+        if (is_FreezeVideo(*this->pCam_, timeout) != IS_SUCCESS) {
+            std::cerr << "** Unable to freeze video for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << " while attempting to retrieve frame"
+                    << std::endl;
+            // set the status of the frame to invalid
+            frame.setStatus(STATUS_INVALID);
+            return false;
+        }
 
         // get more information on the image
-        UEYEIMAGEINFO imgInfo;
         if (is_GetImageInfo(*this->pCam_, this->pFrameBuf_[0].nImageID, &imgInfo, sizeof(imgInfo))
                 != IS_SUCCESS) {
             std::cerr << "** Unable to retrieve image info for camera "
@@ -802,11 +844,64 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.size.width    = imgInfo.dwImageWidth;
         frame.size.height   = imgInfo.dwImageHeight;
         break;
+
     case MultiFrame:
         throw std::runtime_error("MultiFrame not supported yet!");
         break;
-    case Continuously:
 
+    case Continuously:
+        // get a frame
+        if (is_WaitForNextImage(*this->pCam_, timeout, &pTempBuf, &nTempImageID) != IS_SUCCESS) {
+            std::cerr << "** Unable to retrieve next image for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << " while attempting to retrieve frame"
+                    << std::endl;
+            // set the status of the frame to invalid
+            frame.setStatus(STATUS_INVALID);
+            return false;
+        }
+
+        // get more information on the image
+        if (is_GetImageInfo(*this->pCam_, nTempImageID, &imgInfo, sizeof(imgInfo))
+                != IS_SUCCESS) {
+            std::cerr << "** Unable to retrieve image info for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << " while attempting to retrieve frame"
+                    << std::endl;
+            // set the status of the frame to invalid
+            frame.setStatus(STATUS_INVALID);
+            return false;
+        }
+
+        // begin to fill in the output frame
+        frame.image.assign(pTempBuf,
+                pTempBuf + imgInfo.dwImageHeight * imgInfo.dwImageWidth * this->image_color_depth_);
+
+        // set the rolling frame counter
+        frame.attributes.clear();
+        frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
+
+        // set status to valid as we succeeded capturing the frame
+        frame.setStatus(STATUS_VALID);
+
+        // in imgInfo the device time is in 0.1 microS
+        frame.time.fromMicroseconds(10 * imgInfo.u64TimestampDevice);
+        frame.received_time = frame.time;
+
+        // set the color mode of the frame, we are using RGB24
+        frame.frame_mode = this->image_mode_;
+        frame.pixel_size = this->image_color_depth_;
+        frame.data_depth = 8;
+
+        // set dimensions, row size in bytes, image size in pixels
+        frame.row_size      = imgInfo.dwImageWidth * this->image_color_depth_;
+        frame.size.width    = imgInfo.dwImageWidth;
+        frame.size.height   = imgInfo.dwImageHeight;
+
+        // unlock the buffer, in queue mode, image buffers are automatically locked
+        is_UnlockSeqBuf(*this->pCam_, nTempImageID, pTempBuf);
         break;
     default:
         throw std::runtime_error("Grab mode not supported by camera!");
@@ -817,11 +912,16 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
 
 //==============================================================================
 bool CamIds::isFrameAvailable() {
-    char* pDummy;
-    int nDummy;
+    int nTempSeqCount = is_CameraStatus(*this->pCam_, IS_SEQUENCE_CNT, IS_GET_STATUS);
+    int temp = this->nSeqCount_;
+    this->nSeqCount_ = nTempSeqCount;
 
-    if (this->act_grab_mode_ != Stop
-            && is_WaitForNextImage(*this->pCam_, 0, &pDummy, &nDummy) == IS_SUCCESS) {
+    std::cout << "== Frame available with sequence count "
+            << nTempSeqCount
+            << ". Previous frame sequence count is "
+            << temp<< "." << std::endl;
+
+    if (this->act_grab_mode_ != Stop && nTempSeqCount != temp) {
         return true;
     }
     return false;

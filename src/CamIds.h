@@ -54,6 +54,11 @@ private:
     unsigned int nFrameBufLen_;
 
     /**
+     * Used when checking if new frames have arrived.
+     */
+    int nSeqCount_;
+
+    /**
      * Retrieves camera information for a single camera.
      * @warning camera must be initialized when this method is used
      * @param uEyeCamInfo the ueye camera information to be extracted

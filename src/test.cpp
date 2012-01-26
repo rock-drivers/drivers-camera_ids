@@ -1,51 +1,64 @@
-#include "CamIds.h"
 #include <iostream>
+#include <opencv/highgui.h>
+#include <opencv/cv.h>
+#include "CamIds.h"
+#include <sys/stat.h>
 
-using namespace std;
 using namespace camera;
+using namespace base::samples::frame;
+using namespace std;
 
-int main() {
-    CamIds camusb, cameth;
+int main(int argc, char**argv)
+{
+    CamIds cam, cameth;
 
     std::vector<CamInfo> camera_list;
 
     cout << "Number of cameras: "
-            << cameth.listCameras(camera_list)
+            << cam.listCameras(camera_list)
             << endl;
 
     showCamInfos(camera_list);
 
-//    cameth.grab(SingleFrame, 1);
-
     if (camera_list.size() >= 1) {
-        cameth.open(camera_list[1]);
-//        camusb.open(camera_list[0]);
+        cam.open(camera_list[1]);
     }
 
-    //camusb.grab(SingleFrame, 1);
-    cameth.grab(SingleFrame, 1);
-//    camusb.grab(SingleFrame, 1);
+    cam.grab(Continuously, 5);
+
     base::samples::frame::Frame frame;
-    cameth.retrieveFrame(frame, 1000);
+    base::Time prev = base::Time::now();
+    int nrFrames = 10000, count = 0;
 
-//    for (int i = 0; i < frame.size.height; ++i) {
-//        for (int j = 0; j < frame.size.width * frame.pixel_size; ++j) {
-//            std::cout << (int)frame.image[3 * i * frame.size.width + j] << " ";
-//        }
-//        std::cout << std::endl;
-//    }
+    cv::namedWindow("frame", CV_WINDOW_FREERATIO);
 
-    camera_list.clear();
+    for (int i = 0; i < nrFrames; ++i) {
+        cout << "Frame number " << i+1 << endl;
 
-//    const CamInfo* camPt = cam.getCameraInfo();
-//
-//    if (camPt != NULL) {
-//        camera_list.push_back(*camPt);
-//    }
+        int avail = cam.isFrameAvailable();
+        cout << "Frame available: " << avail << endl;
 
-//    showCamInfos(camera_list);
+        if (avail) {
+            count++;
+        }
 
-    std::cout << "Is it open eth: " << cameth.isOpen() << std::endl;
-    std::cout << "Is it open usb: " << camusb.isOpen() << std::endl;
+        cam.retrieveFrame(frame, 500);
+
+        cvWaitKey(10);
+        cv::imshow("frame", frame.convertToCvMat());
+
+        cout << "Actual fps: " << count * 1000000.0 / (base::Time::now().microseconds - prev.microseconds) << endl;
+        cout << endl;
+    }
+    cout << "Average fps: " << nrFrames * 1000000.0 / (base::Time::now().microseconds - prev.microseconds) << endl;
+
+    cam.grab(Stop, 0);
+
+    cam.close();
+
+    std::cout << "Is it open: " << cam.isOpen() << std::endl;
+
     return 0;
 }
+
+
