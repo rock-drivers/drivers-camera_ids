@@ -38,11 +38,9 @@ int main(int argc, char**argv)
         int avail = cam.isFrameAvailable();
         cout << "Frame available: " << avail << endl;
 
-        if (avail) {
-            count++;
+        if (cam.retrieveFrame(frame, 500)) {
+            count ++;
         }
-
-        cam.retrieveFrame(frame, 500);
 
         cvWaitKey(10);
         cv::imshow("frame", frame.convertToCvMat());
@@ -60,5 +58,3 @@ int main(int argc, char**argv)
 
     return 0;
 }
-
-

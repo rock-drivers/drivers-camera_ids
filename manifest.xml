@@ -13,7 +13,7 @@
   <depend package="drivers/camera_interface" />
 
   <export>
-    <cpp cflags="" lflags="">
+    <cpp cflags="" lflags="" />
   </export>
 
   <versioncontrol type="git" url="" />
