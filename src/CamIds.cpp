@@ -7,6 +7,7 @@
 
 #include "CamIds.h"
 #include <iostream>
+#include <boost/current_function.hpp>
 
 using namespace base::samples::frame;
 
@@ -237,9 +238,10 @@ int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
 
         // open the camera temporarily to retrieve the data
         if (is_InitCamera(&camHandle, &hWnd) != IS_SUCCESS) {
-            std::cout << "** Cannot initialize camera "
+            std::cout << "** Cannot initialize (or already open) camera "
                     << "dwCameraID(" << uEyeCamInfo->dwCameraID << "), "
                     << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")" << std::endl;
+            continue;
         }
 
         // to be pushed back into the camera list vector
@@ -396,7 +398,9 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
 
     // set the area of interest of the camera
-    is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI));
+    if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+    }
 
     // set the trigger mode to software, image acquired when calling is_FreezeVideo()
     if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
@@ -767,8 +771,8 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
-        frame.pixel_size = this->image_color_depth_;
-        frame.data_depth = 8;
+        frame.pixel_size = Frame::getChannelCount(this->image_mode_);
+        frame.data_depth = (this->image_color_depth_ * 8) / Frame::getChannelCount(this->image_mode_);
 
         // set dimensions, row size in bytes, image size in pixels
         frame.row_size      = imgInfo.dwImageWidth * this->image_color_depth_;
@@ -821,8 +825,8 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
-        frame.pixel_size = this->image_color_depth_;
-        frame.data_depth = 8;
+        frame.pixel_size = Frame::getChannelCount(this->image_mode_);
+        frame.data_depth = (this->image_color_depth_ * 8) / Frame::getChannelCount(this->image_mode_);
 
         // set dimensions, row size in bytes, image size in pixels
         frame.row_size      = imgInfo.dwImageWidth * this->image_color_depth_;
@@ -847,14 +851,14 @@ bool CamIds::isFrameAvailable() {
     this->nSeqCount_ = nTempSeqCount;
 
     if (this->act_grab_mode_ != Stop && nTempSeqCount != temp) {
-        std::cout << "== New frame available with sequence count "
-                << nTempSeqCount
-                << ". Previous frame sequence count is "
-                << temp<< "." << std::endl;
+//        std::cout << "== New frame available with sequence count "
+//                << nTempSeqCount
+//                << ". Previous frame sequence count is "
+//                << temp<< "." << std::endl;
         return true;
     }
 
-    std::cout << "== New frame not available!" << std::endl;
+//    std::cout << "== New frame not available!" << std::endl;
     return false;
 }
 
@@ -891,7 +895,134 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
         return false;
     }
 
+    // initialize the area of interest dimensions
+    IS_RECT rectAOI;
 
+    rectAOI.s32Width    = size.width;
+    rectAOI.s32Height   = size.height;
+    rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+    rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+
+    // set the area of interest of the camera
+    if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+    }
+
+    // compute the channel count of the given mode
+    int channelCount = Frame::getChannelCount(mode);
+    if (channelCount <= 0) {
+        std::cerr << "** Unsupported frame model for camera "
+                << this->pCamInfo_->unique_id
+                << " (" << this->pCamInfo_->display_name << ")"
+                << "while setting frame settings!" << std::endl;
+        return false;
+    }
+
+    // we require this later on
+    int dataDepth = (color_depth * 8) / channelCount;
+
+    // start from something
+    INT selectedMode = IS_CM_BGR8_PACKED;
+
+    switch (mode) {
+    case MODE_BAYER:
+    case MODE_BAYER_BGGR:
+    case MODE_BAYER_RGGB:
+    case MODE_BAYER_GRBG:
+    case MODE_BAYER_GBRG:
+        if (dataDepth == 8) {
+            selectedMode = IS_CM_BAYER_RG8;
+        }
+        else if (dataDepth == 12) {
+            selectedMode = IS_CM_BAYER_RG12;
+        }
+        else if (dataDepth == 16) {
+            selectedMode = IS_CM_BAYER_RG16;
+        }
+        else {
+            std::cerr << "** Invalid color depth and color mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << "while setting frame settings!" << std::endl;
+            return false;
+        }
+        break;
+    case MODE_GRAYSCALE:
+        if (dataDepth == 8) {
+            selectedMode = IS_CM_MONO8;
+        }
+        else if (dataDepth == 12) {
+            selectedMode = IS_CM_MONO12;
+        }
+        else if (dataDepth == 16) {
+            selectedMode = IS_CM_MONO16;
+        }
+        else {
+            std::cerr << "** Invalid color depth and color mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << "while setting frame settings!" << std::endl;
+            return false;
+        }
+        break;
+    case MODE_RGB:
+        if (dataDepth == 8) {
+            selectedMode = IS_CM_RGB8_PACKED;
+        }
+        else {
+            std::cerr << "** Invalid color depth and color mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << "while setting frame settings!" << std::endl;
+            return false;
+        }
+        break;
+    case MODE_BGR:
+        if (dataDepth == 8) {
+            selectedMode = IS_CM_BGR8_PACKED;
+        }
+        else {
+            std::cerr << "** Invalid color depth and color mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << "while setting frame settings!" << std::endl;
+            return false;
+        }
+        break;
+    case MODE_RGB32:
+        if (dataDepth == 8) {
+            selectedMode = IS_CM_RGBA8_PACKED;
+        }
+        else {
+            std::cerr << "** Invalid color depth and color mode for camera "
+                    << this->pCamInfo_->unique_id
+                    << " (" << this->pCamInfo_->display_name << ")"
+                    << "while setting frame settings!" << std::endl;
+            return false;
+        }
+        break;
+    case MODE_UYVY:
+        selectedMode = IS_CM_UYVY_PACKED;
+        break;
+    default:
+        std::cerr << "** Unknown color mode for camera "
+                << this->pCamInfo_->unique_id
+                << " (" << this->pCamInfo_->display_name << ")"
+                << "while setting frame settings!" << std::endl;
+        return false;
+        break;
+    }
+
+    // now set the camera to the selected color mode
+    if (is_SetColorMode(*this->pCam_, selectedMode) != IS_SUCCESS) {
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set color mode");
+    }
+
+    // set the respective fields to the proper values
+    std::cout << size.width << "x" << size.height << " " << mode << " " << (int)color_depth << std::endl;
+    this->image_size_           = size;
+    this->image_mode_           = mode;
+    this->image_color_depth_    = color_depth;
 
     return true;
 }
