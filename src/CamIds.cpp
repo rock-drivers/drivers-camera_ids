@@ -1032,6 +1032,9 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
         base::samples::frame::frame_mode_t& mode,
         uint8_t& color_depth)
 {
+    size = this->image_size_;
+    mode = this->image_mode_;
+    color_depth = this->image_color_depth_;
 
     return true;
 }
