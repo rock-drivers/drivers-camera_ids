@@ -9,13 +9,10 @@
 #define _CAMIDS_H
 
 
-#include "camera_interface/CamInterface.h"  // this is where the ROCK camera interface is defined
-#include "camera_interface/CamInfoUtils.h"
-//#include <CamInterface.h>                 // use only for eclipse with -I
-//#include <CamInfoUtils.h>                 // use only for eclipse with -I
+#include <camera_interface/CamInterface.h>  
+#include <camera_interface/CamInfoUtils.h>                 
 
-#include "base/samples/frame.h"             // container for video frames
-//#include <base/samples/frame.h>           // use only for eclipse with -I
+#include <base/samples/frame.h>
 
 #include <ueye.h>                           // API for the IDS cameras
 
@@ -206,22 +203,22 @@ public:
 //        /**
 //          * Checks if an integer attribute is available.
 //          */
-//        bool isAttribAvail(const int_attrib::CamAttrib attrib);
+          bool isAttribAvail(const int_attrib::CamAttrib attrib) { return false; }
 
 //        /**
 //          * Checks if a double attribute is available.
 //          */
-//        bool isAttribAvail(const double_attrib::CamAttrib attrib);
+          bool isAttribAvail(const double_attrib::CamAttrib attrib) { return false; }
 
 //        /**
 //          * Checks if a string attribute is available.
 //          */
-//        bool isAttribAvail(const str_attrib::CamAttrib attrib);
+          bool isAttribAvail(const str_attrib::CamAttrib attrib) { return false; }
 
 //        /**
 //          * Checks if a enum attribute is available.
 //          */
-//        bool isAttribAvail(const enum_attrib::CamAttrib attrib);
+          bool isAttribAvail(const enum_attrib::CamAttrib attrib) { return false; }
 
 //        /**
 //          * Returns the value of an integer attribute.
