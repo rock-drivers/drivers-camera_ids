@@ -180,45 +180,45 @@ public:
 //          */
 //        bool setIpSettings(const CamInfo& cam, const IPSettings& ip_settings) const;
 
-//        /**
-//          * Sets the value of an integer attribute.
-//          */
-//        bool setAttrib(const int_attrib::CamAttrib attrib, const int value);
+        /**
+          * Sets the value of an integer attribute.
+          */
+        bool setAttrib(const int_attrib::CamAttrib attrib, const int value);
 
-//        /**
-//          * Sets the value of a double attribute.
-//          */
-//        bool setAttrib(const double_attrib::CamAttrib attrib, const double value);
+        /**
+          * Sets the value of a double attribute.
+          */
+        bool setAttrib(const double_attrib::CamAttrib attrib, const double value);
 
-//        /**
-//          * Sets the value of a string attribute.
-//          */
-//        bool setAttrib(const str_attrib::CamAttrib attrib, const std::string value);
+        /**
+          * Sets the value of a string attribute.
+          */
+        bool setAttrib(const str_attrib::CamAttrib attrib, const std::string value);
 
-//        /**
-//          * Sets the value of an enum attribute.
-//          */
-//        bool setAttrib(const enum_attrib::CamAttrib attrib);
+        /**
+          * Sets the value of an enum attribute.
+          */
+        bool setAttrib(const enum_attrib::CamAttrib attrib);
 
-//        /**
-//          * Checks if an integer attribute is available.
-//          */
-          bool isAttribAvail(const int_attrib::CamAttrib attrib) { return false; }
+    /**
+     * Checks if an integer attribute is available.
+     */
+    bool isAttribAvail(const int_attrib::CamAttrib attrib);
 
-//        /**
-//          * Checks if a double attribute is available.
-//          */
-          bool isAttribAvail(const double_attrib::CamAttrib attrib) { return false; }
+    /**
+     * Checks if a double attribute is available.
+     */
+    bool isAttribAvail(const double_attrib::CamAttrib attrib);
 
-//        /**
-//          * Checks if a string attribute is available.
-//          */
-          bool isAttribAvail(const str_attrib::CamAttrib attrib) { return false; }
+    /**
+     * Checks if a string attribute is available.
+     */
+    bool isAttribAvail(const str_attrib::CamAttrib attrib);
 
-//        /**
-//          * Checks if a enum attribute is available.
-//          */
-          bool isAttribAvail(const enum_attrib::CamAttrib attrib) { return false; }
+    /**
+     * Checks if a enum attribute is available.
+     */
+    bool isAttribAvail(const enum_attrib::CamAttrib attrib);
 
 //        /**
 //          * Returns the value of an integer attribute.

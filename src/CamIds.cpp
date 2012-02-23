@@ -413,7 +413,7 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     }
 
     double newFps;
-    if (is_SetFrameRate(*this->pCam_, 50, &newFps) != IS_SUCCESS) {
+    if (is_SetFrameRate(*this->pCam_, 24, &newFps) != IS_SUCCESS) {
         std::cerr << "** Unable to set frame rate for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
@@ -1040,12 +1040,147 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
 }
 
 //==============================================================================
+bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
+    // camera is not open
+    if (!this->pCam_) {
+        return false;
+    }
+
+    // some temporary variables
+    double temp;
+    double red, blue;
+
+    switch (attrib) {
+        case int_attrib::ExposureValue:
+            temp = (double) value;
+            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &temp, sizeof(temp))) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure");
+            }
+            break;
+        case int_attrib::ExposureAutoMax:
+            temp = (double) value;
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_AUTO_SHUTTER_MAX, &temp, NULL)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto exposure");
+            }
+            break;
+        case int_attrib::GainValue:
+            if (IS_SUCCESS != is_SetHWGainFactor(*this->pCam_, IS_SET_MASTER_GAIN_FACTOR, value)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set gain factor value");
+            }
+            break;
+        case int_attrib::GainAutoMax:
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_AUTO_GAIN_MAX, &temp, NULL)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto gain");
+            }
+            break;
+        case int_attrib::WhitebalValueRed: // XXX -50 to +50 offset
+            // retrieve current values
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_GET_AUTO_WB_OFFSET, &red, &blue)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to get white balance offset for red channel");
+            }
+
+            // set the new value for red
+            red = (double) value;
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_AUTO_WB_OFFSET, &red, &blue)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set white balance offset for red channel");
+            }
+            break;
+        case int_attrib::WhitebalValueBlue: // XXX -50 to +50 offset
+            // retrieve current values
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_GET_AUTO_WB_OFFSET, &red, &blue)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to get white balance offset for blue channel");
+            }
+
+            // set the new value for red
+            blue = (double) value;
+            if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_AUTO_WB_OFFSET, &red, &blue)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set white balance offset for blue channel");
+            }
+            break;
+        case int_attrib::SaturationValue:
+            if (IS_SUCCESS != is_Saturation(*this->pCam_, SATURATION_CMD_SET_VALUE, (void*) &value, sizeof(value))) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set saturation value");
+            }
+            break;
+        case int_attrib::PixelClock:
+            if (IS_SUCCESS != is_SetPixelClock(*this->pCam_, value)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set pixel clock");
+            }
+            break;
+        default:
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
+            break;
+    }
+    return true;
+}
+
+//==============================================================================
+bool CamIds::setAttrib(const double_attrib::CamAttrib attrib, const double value) {
+    // camera is not open
+    if (!this->pCam_) {
+        return false;
+    }
+
+    switch (attrib) {
+        case double_attrib::FrameRate:
+            double newFrameRate;
+            if (IS_SUCCESS != is_SetFrameRate(*this->pCam_, value, &newFrameRate)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set frame rate");
+            }
+            break;
+        default:
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
+            break;
+    }
+
+    return true;
+}
+
+//==============================================================================
+bool CamIds::setAttrib(const str_attrib::CamAttrib attrib, const std::string value) {
+    // camera is not open
+    if (!this->pCam_) {
+        return false;
+    }
+
+    switch (attrib) {
+    default:
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
+        break;
+    }
+
+    return true;
+}
+
+//==============================================================================
+bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
+    // camera is not open
+    if (!this->pCam_) {
+        return false;
+    }
+
+    // TODO turn on and off all attributes
+    switch (attrib) {
+    default:
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
+        break;
+    }
+
+    return true;
+}
+
+//==============================================================================
 bool CamIds::isAttribAvail(const int_attrib::CamAttrib attrib) {
     return false;
 }
 
 //==============================================================================
 bool CamIds::isAttribAvail(const double_attrib::CamAttrib attrib) {
+    return false;
+}
+
+//==============================================================================
+bool CamIds::isAttribAvail(const str_attrib::CamAttrib attrib) {
     return false;
 }
 
