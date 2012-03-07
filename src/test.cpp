@@ -21,8 +21,16 @@ int main(int argc, char**argv)
     showCamInfos(camera_list);
 
     if (camera_list.size() >= 1) {
-        cam.open(camera_list[1]);
+        cam.open(camera_list[0]);
     }
+
+    // test attributes here
+    if (argc == 2) {
+        cam.setAttrib(double_attrib::FrameRate, atof(argv[1]));
+    } else {
+        throw runtime_error("need more arguments");
+    }
+
 
     cam.grab(Continuously, 5);
 

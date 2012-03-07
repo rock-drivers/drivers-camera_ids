@@ -1050,6 +1050,15 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     double temp;
     double red, blue;
 
+    // binning mode
+    INT mode;
+
+    // used to retrieve camera sensor info
+    SENSORINFO sensorInfo;
+
+    // used to set area of interest for camera sensor
+    IS_RECT rectAOI;
+
     switch (attrib) {
         case int_attrib::ExposureValue:
             temp = (double) value;
@@ -1059,6 +1068,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             break;
         case int_attrib::ExposureAutoMax:
             temp = (double) value;
+
             if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_AUTO_SHUTTER_MAX, &temp, NULL)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto exposure");
             }
@@ -1105,6 +1115,144 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
         case int_attrib::PixelClock:
             if (IS_SUCCESS != is_SetPixelClock(*this->pCam_, value)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set pixel clock");
+            }
+            break;
+        case int_attrib::BinningX:
+            switch (value) {
+            case 1:
+                mode = IS_BINNING_DISABLE;
+
+                // we also need to adjust the image size
+                if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
+                    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
+                }
+
+                this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
+                this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
+                break;
+            case 2:
+                mode = IS_BINNING_2X_HORIZONTAL;
+                this->image_size_.width /= 2;
+                break;
+            case 3:
+                mode = IS_BINNING_3X_HORIZONTAL;
+                this->image_size_.width /= 3;
+                break;
+            case 4:
+                mode = IS_BINNING_4X_HORIZONTAL;
+                this->image_size_.width /= 4;
+                break;
+            case 5:
+                mode = IS_BINNING_5X_HORIZONTAL;
+                this->image_size_.width /= 5;
+                break;
+            case 6:
+                mode = IS_BINNING_6X_HORIZONTAL;
+                this->image_size_.width /= 6;
+                break;
+            case 8:
+                mode = IS_BINNING_8X_HORIZONTAL;
+                this->image_size_.width /= 8;
+                break;
+            case 16:
+                mode = IS_BINNING_16X_HORIZONTAL;
+                this->image_size_.width /= 16;
+                break;
+            default:
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-X factor");
+                break;
+            }
+
+            // after factor is chosen set it to the chosen value
+            if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": binning-X factor not supported by camera");
+            }
+            break;
+        case int_attrib::BinningY:
+            switch (value) {
+            case 1:
+                mode = IS_BINNING_DISABLE;
+
+                // we also need to adjust the image size
+                if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
+                    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
+                }
+
+                this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
+                this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
+                break;
+            case 2:
+                mode = IS_BINNING_2X_VERTICAL;
+                this->image_size_.height /= 2;
+                break;
+            case 3:
+                mode = IS_BINNING_3X_VERTICAL;
+                this->image_size_.height /= 3;
+                break;
+            case 4:
+                mode = IS_BINNING_4X_VERTICAL;
+                this->image_size_.height /= 4;
+                break;
+            case 5:
+                mode = IS_BINNING_5X_VERTICAL;
+                this->image_size_.height /= 5;
+                break;
+            case 6:
+                mode = IS_BINNING_6X_VERTICAL;
+                this->image_size_.height /= 6;
+                break;
+            case 8:
+                mode = IS_BINNING_8X_VERTICAL;
+                this->image_size_.height /= 8;
+                break;
+            case 16:
+                mode = IS_BINNING_16X_VERTICAL;
+                this->image_size_.height /= 16;
+                break;
+            default:
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-Y factor");
+                break;
+            }
+
+            // after factor is chosen set it to the chosen value
+            if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + " binning-Y factor not supported by camera");
+            }
+            break;
+        case int_attrib::RegionX:
+            if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
+            }
+
+            // set image size to the camera maximum, and the x axis to the new size
+            this->image_size_.width     = (uint16_t) value;
+
+            rectAOI.s32Width    = this->image_size_.width;
+            rectAOI.s32Height   = this->image_size_.height;
+            rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+            rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+
+            // set the area of interest of the camera
+            if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+            }
+            break;
+        case int_attrib::RegionY:
+            if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
+            }
+
+            // set image size to the camera maximum, and the y axis to the new size
+            this->image_size_.height    = (uint16_t) value;
+
+            rectAOI.s32Width    = this->image_size_.width;
+            rectAOI.s32Height   = this->image_size_.height;
+            rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+            rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+
+            // set the area of interest of the camera
+            if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
             }
             break;
         default:
@@ -1159,8 +1307,39 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
         return false;
     }
 
+    // temporary variables
+    double temp;
+
     // TODO turn on and off all attributes
     switch (attrib) {
+    case enum_attrib::MirrorXToOn:
+        if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 1, 0)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
+        }
+        break;
+    case enum_attrib::MirrorXToOff:
+        if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 0, 0)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
+        }
+        break;
+    case enum_attrib::ExposureModeToAuto:
+        // turn on auto
+        temp = 1;
+
+        // turn on auto exposure
+        if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_ENABLE_AUTO_SHUTTER, &temp, NULL)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto framerate");
+        }
+        break;
+    case enum_attrib::ExposureModeToManual:
+        // turn off auto
+        temp = 0;
+
+        // turn on auto exposure
+        if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_ENABLE_AUTO_SHUTTER, &temp, NULL)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto framerate");
+        }
+        break;
     default:
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
         break;
@@ -1171,11 +1350,39 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
 
 //==============================================================================
 bool CamIds::isAttribAvail(const int_attrib::CamAttrib attrib) {
+    switch (attrib) {
+    case int_attrib::ExposureValue:
+    case int_attrib::ExposureAutoMax:
+    case int_attrib::GainValue:
+    case int_attrib::GainAutoMax:
+    case int_attrib::WhitebalValueRed:
+    case int_attrib::WhitebalValueBlue:
+    case int_attrib::SaturationValue:
+    case int_attrib::PixelClock:
+    case int_attrib::BinningX:
+    case int_attrib::BinningY:
+    case int_attrib::RegionX:
+    case int_attrib::RegionY:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+
     return false;
 }
 
 //==============================================================================
 bool CamIds::isAttribAvail(const double_attrib::CamAttrib attrib) {
+    switch (attrib) {
+    case double_attrib::FrameRate:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
     return false;
 }
 
@@ -1186,6 +1393,17 @@ bool CamIds::isAttribAvail(const str_attrib::CamAttrib attrib) {
 
 //==============================================================================
 bool CamIds::isAttribAvail(const enum_attrib::CamAttrib attrib) {
+    switch (attrib) {
+    case enum_attrib::MirrorXToOn:
+    case enum_attrib::MirrorXToOff:
+    case enum_attrib::ExposureModeToAuto:
+    case enum_attrib::ExposureModeToManual:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
     return false;
 }
 //==============================================================================
