@@ -8,6 +8,7 @@
 #include "CamIds.h"
 #include <iostream>
 #include <boost/current_function.hpp>
+#include <base/logging.h>
 
 using namespace base::samples::frame;
 
@@ -30,10 +31,10 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
     CAMINFO moreCamInfo;
 
     if (is_GetCameraInfo(*camHandle, &moreCamInfo) != IS_SUCCESS) {
-        std::cerr << "** Camera "
+        LOG_ERROR_S << "Camera "
                 << "dwCameraID(" << uEyeCamInfo->dwCameraID << "), "
                 << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")"
-                << " not found, or device is already in use!" << std::endl;
+                << " not found, or device is already in use!";
     }
 
     if (moreCamInfo.Type == IS_CAMERA_TYPE_UEYE_USB
@@ -62,10 +63,9 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
                 != IS_SUCCESS)
         {
             // unknown interface camera attached
-            std::cerr << "** Ethernet camera not found: "
+            LOG_ERROR_S << "** Ethernet camera not found: "
                     << "dwCameraID(" << uEyeCamInfo->dwCameraID << "), "
-                    << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")"
-                    <<std::endl;
+                    << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")";
         }
 
         // start with unknown config
@@ -148,9 +148,9 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
     } else {
         // set the interface type to unknown
         camInfo.interface_type = InterfaceUnknown;
-        std::cerr << "** Unknown camera type: "
+        LOG_ERROR_S << "Unknown camera type: "
                 << "dwCameraID(" << uEyeCamInfo->dwCameraID << "), "
-                << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")" << std::endl;
+                << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")";
     }
     return camInfo;
 }
@@ -175,7 +175,7 @@ CamIds::CamIds(const CamIds& other) {
 
 //==============================================================================
 CamIds::~CamIds() {
-    std::cout << "== Destructing camera" << std::endl;
+    LOG_INFO_S << "Destructing camera";
 
     // release all memory
 
@@ -208,7 +208,7 @@ int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
 
     // proceed if we have some cameras
     if (numCam <= 0) {
-        std::cerr << "** No cameras found!" << std::endl;
+        LOG_ERROR_S << "No cameras found!";
         return 0;
     }
 
@@ -221,7 +221,7 @@ int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
 
     // get the camera list
     if (is_GetCameraList(cameraList) != IS_SUCCESS) {
-        std::cerr << "** Unable to retrieve camera list!" << std::endl;
+        LOG_ERROR_S << "Unable to retrieve camera list!";
         delete[] cameraList;
         return 0;
     }
@@ -238,9 +238,9 @@ int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
 
         // open the camera temporarily to retrieve the data
         if (is_InitCamera(&camHandle, &hWnd) != IS_SUCCESS) {
-            std::cout << "** Cannot initialize (or already open) camera "
+            LOG_WARN_S << "Cannot initialize (or already open) camera "
                     << "dwCameraID(" << uEyeCamInfo->dwCameraID << "), "
-                    << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")" << std::endl;
+                    << "dwDeviceID(" << uEyeCamInfo->dwDeviceID << ")";
             continue;
         }
 
@@ -268,7 +268,7 @@ int CamIds::countCameras() const {
     INT retVal = is_GetNumberOfCameras(&numberOfCameras);
 
     if (retVal != IS_SUCCESS) {
-        std::cerr << "** Unable to retrieve number of cameras!" << std::endl;
+        LOG_ERROR_S << "Unable to retrieve number of cameras!";
         return 0;
     }
     else {
@@ -278,12 +278,12 @@ int CamIds::countCameras() const {
 
 //==============================================================================
 bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
-    std::cout << "== Opening camera number " << cam.unique_id
-            << " (" << cam.display_name << ")" << std::endl;
+    LOG_INFO_S << "Opening camera number " << cam.unique_id
+            << " (" << cam.display_name << ")";
 
     // cannot open camera a second time
     if (isOpen()) {
-        std::cerr << "** Camera already open for current object!" << std::endl;
+        LOG_WARN_S << "Camera already open for current object!";
         return true;
     }
 
@@ -308,15 +308,15 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     INT nRet = is_InitCamera(pCam_, &hWnd);
 
     if (nRet != IS_SUCCESS) {
-        std::cerr << "** Could not open camera " << cam.unique_id << " (" << cam.display_name << ")" << std::endl;
+        LOG_ERROR_S << "Could not open camera " << cam.unique_id << " (" << cam.display_name << ")";
         this->close();
         return false;
     }
 
     // camera successfully opened
-    std::cout << "== Camera " << cam.unique_id
+    LOG_INFO_S << "Camera " << cam.unique_id
             << " (" << cam.display_name << ")"
-            << " successfully opened " << std::endl;
+            << " successfully opened ";
 
     //----------------------------------------------------------------------
     // fetch camera information
@@ -332,14 +332,14 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
 
     // proceed if we have some cameras
     if (cameraList->dwCount <= 0) {
-        std::cout << "** No cameras found! Please check if properly attached!" << std::endl;
+        LOG_ERROR_S << "No cameras found! Please check if properly attached!";
         this->close();
         return false;
     }
 
     // get the camera list
     if (is_GetCameraList(cameraList) != IS_SUCCESS) {
-        std::cerr << "** Unable to retrieve camera list while opening camera!" << std::endl;
+        LOG_ERROR_S << "Unable to retrieve camera list while opening camera!";
         this->close();
         return false;
     }
@@ -365,8 +365,8 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     SENSORINFO sensorInfo;
 
     if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-        std::cerr << "** Failed to fetch sensor information for camera "
-                << cam.unique_id << " (" << cam.display_name << ")" << std::endl;
+        LOG_ERROR_S << "Failed to fetch sensor information for camera "
+                << cam.unique_id << " (" << cam.display_name << ")";
         this->close();
         return false;
     }
@@ -375,13 +375,13 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     this->image_size_.height    = (uint16_t) sensorInfo.nMaxHeight;
     this->image_size_.width     = (uint16_t) sensorInfo.nMaxWidth;
 
-    std::cout << "== Image size set to "
-            << this->image_size_.width << " x " << this->image_size_.height << std::endl;
+    LOG_INFO_S << "Image size set to "
+            << this->image_size_.width << " x " << this->image_size_.height;
 
     // color depth in bytes, set default RGB24
     if (is_SetColorMode(*this->pCam_, IS_CM_BGR8_PACKED) != IS_SUCCESS) {
-        std::cerr << "** Unable to set color mode for camera "
-                << cam.unique_id << " (" << cam.display_name << ")" << std::endl;
+        LOG_ERROR_S << "Unable to set color mode for camera "
+                << cam.unique_id << " (" << cam.display_name << ")";
         this->close();
         return false;
     }
@@ -404,25 +404,25 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
 
     // set the trigger mode to software, image acquired when calling is_FreezeVideo()
     if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
-        std::cerr << "** Unable to set trigger mode for camera "
+        LOG_ERROR_S << "Unable to set trigger mode for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
-                << " while attempting to open" << std::endl;
+                << " while attempting to open";
         this->close();
         return false;
     }
 
     double newFps;
     if (is_SetFrameRate(*this->pCam_, 24, &newFps) != IS_SUCCESS) {
-        std::cerr << "** Unable to set frame rate for camera "
+        LOG_ERROR_S << "Unable to set frame rate for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
-                << " while attempting to open" << std::endl;
+                << " while attempting to open";
         this->close();
         return false;
     }
 
-    std::cout << "== Frame rate set to " << newFps << std::endl;
+    LOG_INFO_S << "Frame rate set to " << newFps;
 
     // initial grab mode set to stop
     this->act_grab_mode_ = Stop;
@@ -449,7 +449,7 @@ const CamInfo* CamIds::getCameraInfo() const {
 //==============================================================================
 bool CamIds::close() {
     // release all memory
-    std::cout << "== Closing camera" << std::endl;
+    LOG_INFO_S << "Closing camera";
 
     // clear the queue, stop live video
     if (this->act_grab_mode_ == Continuously) {
@@ -505,34 +505,30 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
     // cannot grab if camera is not open
     //--------------------------------------------------------------------------
     if (this->isOpen() == false) {
-        std::cerr << "** Cannot grab, camera is not open!" << std::endl;
+        LOG_ERROR_S << "Cannot grab, camera is not open!";
         return false;
     }
 
     // used to check return values of functions
     INT retVal;
 
-    std::cout << "== Setting grab mode ";
     switch(mode) {
     case Stop:
         // never reached
-        std::cout << "Stop";
+        LOG_INFO_S << "Set grab mode to Stop";
         break;
     case SingleFrame:
-        std::cout << "SingleFrame";
+        LOG_INFO_S << "Set grab mode to SingleFrame";
         break;
     case MultiFrame:
-        std::cout << "MultiFrame";
+        LOG_INFO_S << "Set grab mode to MultiFrame";
         break;
     case Continuously:
-        std::cout << "Continuously";
+        LOG_INFO_S << "Set grab mode to Continuously";
         break;
     default:
         throw std::runtime_error("Grab mode not supported by camera!");
     }
-    std::cout << " for camera "
-            << this->pCamInfo_->unique_id
-            << " (" << this->pCamInfo_->display_name << ")" << std::endl;
 
     //--------------------------------------------------------------------------
     // check the current and the requested grab mode
@@ -540,11 +536,11 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
     if (this->act_grab_mode_ != Stop && mode != Stop) {
         // we need to stop grabbing before switching grab mode
         if (this->act_grab_mode_ != mode) {
-            std::cerr << "Stop grabbing before switching the grab mode!" << std::endl;
+            LOG_ERROR_S << "Stop grabbing before switching the grab mode!";
             return false;
         }
         else {
-            std::cout << "== Same grab mode requested!" << std::endl;
+            LOG_DEBUG_S << "Same grab mode requested!";
             return true;
         }
     }
@@ -561,9 +557,9 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 
         // stop live video
         if (is_StopLiveVideo(*this->pCam_, IS_WAIT) != IS_SUCCESS) {
-            std::cerr << "Unable to stop live capture for camera "
+            LOG_ERROR_S << "Unable to stop live capture for camera "
                     << this->pCamInfo_->unique_id
-                    << " (" << this->pCamInfo_->display_name << ")" << std::endl;
+                    << " (" << this->pCamInfo_->display_name << ")";
             return false;
         }
 
@@ -607,10 +603,10 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
                 &this->pFrameBuf_[0].pBuf, &this->pFrameBuf_[0].nImageID);
 
         if (retVal != IS_SUCCESS) {
-            std::cerr << "** Unable to allocate image memory for camera "
+            LOG_ERROR_S << "Unable to allocate image memory for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to grab" << std::endl;
+                    << " while attempting to grab";
             this->close();
             return false;
         }
@@ -622,10 +618,10 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
         // set the image memory to the allocated one
         if (is_SetImageMem(*this->pCam_, this->pFrameBuf_[0].pBuf, this->pFrameBuf_[0].nImageID)
                 != IS_SUCCESS) {
-            std::cerr << "** Unable to set image memory for camera "
+            LOG_ERROR_S << "Unable to set image memory for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to grab" << std::endl;
+                    << " while attempting to grab";
             this->close();
             return false;
         }
@@ -636,10 +632,10 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
             INT mode = is_SetDisplayMode(*this->pCam_, IS_GET_DISPLAY_MODE);
 
             if (mode != IS_SET_DM_DIB) {
-                std::cerr << "** Unable to set display mode for camera "
+                LOG_ERROR_S << "Unable to set display mode for camera "
                         << this->pCamInfo_->unique_id
                         << " (" << this->pCamInfo_->display_name << ")"
-                        << " while attempting to grab" << std::endl;
+                        << " while attempting to grab";
                 this->close();
                 return false;
             }
@@ -673,10 +669,10 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
                     &this->pFrameBuf_[i].pBuf, &this->pFrameBuf_[i].nImageID);
 
             if (retVal != IS_SUCCESS) {
-                std::cerr << "** Unable to allocate image memory for camera "
+                LOG_ERROR_S << "Unable to allocate image memory for camera "
                         << this->pCamInfo_->unique_id
                         << " (" << this->pCamInfo_->display_name << ")"
-                        << " while attempting to grab" << std::endl;
+                        << " while attempting to grab";
                 this->close();
                 return false;
             }
@@ -728,16 +724,16 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
     // depending on the active grabbing mode, acquire frame
     switch (this->act_grab_mode_) {
     case Stop:
-        std::cerr << "** Active mode is set to Stop! Cannot retrieve frame!" << std::endl;
+        LOG_DEBUG_S << "Active mode is set to Stop! Cannot retrieve frame!";
         return false;
         break;
     case SingleFrame:
         // freeze the video for the single frame acquisition
         if (is_FreezeVideo(*this->pCam_, timeout) != IS_SUCCESS) {
-            std::cerr << "** Unable to freeze video for camera "
+            LOG_DEBUG_S << "Unable to freeze video for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame" << std::endl;
+                    << " while attempting to retrieve frame";
             // set the status of the frame to invalid
             frame.setStatus(STATUS_INVALID);
             return false;
@@ -746,10 +742,10 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         // get more information on the image
         if (is_GetImageInfo(*this->pCam_, this->pFrameBuf_[0].nImageID, &imgInfo, sizeof(imgInfo))
                 != IS_SUCCESS) {
-            std::cerr << "** Unable to retrieve image info for camera "
+            LOG_DEBUG_S << "Unable to retrieve image info for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame" << std::endl;
+                    << " while attempting to retrieve frame";
             // set the status of the frame to invalid
             frame.setStatus(STATUS_INVALID);
             return false;
@@ -787,10 +783,10 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
     case Continuously:
         // get a frame
         if (is_WaitForNextImage(*this->pCam_, timeout, &pTempBuf, &nTempImageID) != IS_SUCCESS) {
-            std::cerr << "** Unable to retrieve next image for camera "
+            LOG_DEBUG_S << "Unable to retrieve next image for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame" << std::endl;
+                    << " while attempting to retrieve frame";
             // set the status of the frame to invalid
             frame.setStatus(STATUS_INVALID);
             return false;
@@ -799,10 +795,10 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         // get more information on the image
         if (is_GetImageInfo(*this->pCam_, nTempImageID, &imgInfo, sizeof(imgInfo))
                 != IS_SUCCESS) {
-            std::cerr << "** Unable to retrieve image info for camera "
+            LOG_DEBUG_S << "Unable to retrieve image info for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame" << std::endl;
+                    << " while attempting to retrieve frame";
             // set the status of the frame to invalid
             frame.setStatus(STATUS_INVALID);
             return false;
@@ -850,15 +846,9 @@ bool CamIds::isFrameAvailable() {
     int temp = this->nSeqCount_;
     this->nSeqCount_ = nTempSeqCount;
 
-    if (this->act_grab_mode_ != Stop && nTempSeqCount != temp) {
-//        std::cout << "== New frame available with sequence count "
-//                << nTempSeqCount
-//                << ". Previous frame sequence count is "
-//                << temp<< "." << std::endl;
+    if (this->act_grab_mode_ != Stop && nTempSeqCount != temp)
         return true;
-    }
 
-//    std::cout << "== New frame not available!" << std::endl;
     return false;
 }
 
@@ -874,7 +864,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     }
 
     if (this->act_grab_mode_ != Stop) {
-        std::cerr << "Cannot change camera setting during grabbing!" << std::endl;
+        LOG_ERROR_S << "Cannot change camera setting during grabbing!";
         return false;
     }
 
@@ -882,16 +872,16 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     SENSORINFO sensorInfo;
 
     if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-        std::cerr << "** Failed to fetch sensor information for camera "
+        LOG_ERROR_S << "Failed to fetch sensor information for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
-                << "while setting frame settings!" << std::endl;
+                << "while setting frame settings!";
         return false;
     }
 
     // check if the frame size is supported by the camera
     if (size.width > sensorInfo.nMaxWidth || size.height > sensorInfo.nMaxHeight) {
-        std::cerr << "** Frame size not supported!" << std::endl;
+        LOG_ERROR_S << "Frame size not supported!";
         return false;
     }
 
@@ -911,10 +901,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     // compute the channel count of the given mode
     int channelCount = Frame::getChannelCount(mode);
     if (channelCount <= 0) {
-        std::cerr << "** Unsupported frame model for camera "
+        LOG_ERROR_S << "Unsupported frame model for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
-                << "while setting frame settings!" << std::endl;
+                << "while setting frame settings!";
         return false;
     }
 
@@ -940,10 +930,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             selectedMode = IS_CM_BAYER_RG16;
         }
         else {
-            std::cerr << "** Invalid color depth and color mode for camera "
+            LOG_ERROR_S << "Invalid color depth and color mode for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << "while setting frame settings!" << std::endl;
+                    << "while setting frame settings!";
             return false;
         }
         break;
@@ -958,10 +948,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             selectedMode = IS_CM_MONO16;
         }
         else {
-            std::cerr << "** Invalid color depth and color mode for camera "
+            LOG_ERROR_S << "** Invalid color depth and color mode for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << "while setting frame settings!" << std::endl;
+                    << "while setting frame settings!";
             return false;
         }
         break;
@@ -970,10 +960,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             selectedMode = IS_CM_RGB8_PACKED;
         }
         else {
-            std::cerr << "** Invalid color depth and color mode for camera "
+            LOG_ERROR_S << "Invalid color depth and color mode for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << "while setting frame settings!" << std::endl;
+                    << "while setting frame settings!";
             return false;
         }
         break;
@@ -982,10 +972,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             selectedMode = IS_CM_BGR8_PACKED;
         }
         else {
-            std::cerr << "** Invalid color depth and color mode for camera "
+            LOG_ERROR_S << "Invalid color depth and color mode for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << "while setting frame settings!" << std::endl;
+                    << "while setting frame settings!";
             return false;
         }
         break;
@@ -994,10 +984,10 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             selectedMode = IS_CM_RGBA8_PACKED;
         }
         else {
-            std::cerr << "** Invalid color depth and color mode for camera "
+            LOG_ERROR_S << "** Invalid color depth and color mode for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << "while setting frame settings!" << std::endl;
+                    << "while setting frame settings!";
             return false;
         }
         break;
@@ -1005,7 +995,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
         selectedMode = IS_CM_UYVY_PACKED;
         break;
     default:
-        std::cerr << "** Unknown color mode for camera "
+        LOG_ERROR_S << "Unknown color mode for camera "
                 << this->pCamInfo_->unique_id
                 << " (" << this->pCamInfo_->display_name << ")"
                 << "while setting frame settings!" << std::endl;
@@ -1019,7 +1009,6 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     }
 
     // set the respective fields to the proper values
-    std::cout << size.width << "x" << size.height << " " << mode << " " << (int)color_depth << std::endl;
     this->image_size_           = size;
     this->image_mode_           = mode;
     this->image_color_depth_    = color_depth;

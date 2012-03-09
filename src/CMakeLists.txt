@@ -5,7 +5,7 @@ link_directories (/use/local/lib)
 rock_library(camera_ids
     SOURCES CamIds.cpp
     HEADERS CamIds.h
-    DEPS_PKGCONFIG base-types camera_interface)
+    DEPS_PKGCONFIG base-types camera_interface base-lib)
 
 #set(module_name ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} ueye_api)
