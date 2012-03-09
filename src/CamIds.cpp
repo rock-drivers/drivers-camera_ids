@@ -1074,7 +1074,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             }
             break;
         case int_attrib::GainValue:
-            if (IS_SUCCESS != is_SetHWGainFactor(*this->pCam_, IS_SET_MASTER_GAIN_FACTOR, value)) {
+            if (IS_SUCCESS != is_SetHardwareGain(*this->pCam_, value, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set gain factor value");
             }
             break;
