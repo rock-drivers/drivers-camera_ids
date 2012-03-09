@@ -1223,13 +1223,13 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
             }
-
+            
             // set image size to the camera maximum, and the x axis to the new size
-            this->image_size_.width     = (uint16_t) value;
+            // this->image_size_.width     = (uint16_t) value;
 
             rectAOI.s32Width    = this->image_size_.width;
             rectAOI.s32Height   = this->image_size_.height;
-            rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+            rectAOI.s32X        = value | IS_AOI_IMAGE_POS_ABSOLUTE;
             rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
 
             // set the area of interest of the camera
@@ -1243,12 +1243,12 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             }
 
             // set image size to the camera maximum, and the y axis to the new size
-            this->image_size_.height    = (uint16_t) value;
+            //this->image_size_.height    = (uint16_t) value;
 
             rectAOI.s32Width    = this->image_size_.width;
             rectAOI.s32Height   = this->image_size_.height;
             rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-            rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
+            rectAOI.s32Y        = value | IS_AOI_IMAGE_POS_ABSOLUTE;
 
             // set the area of interest of the camera
             if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
