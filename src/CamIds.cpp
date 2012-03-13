@@ -692,6 +692,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout) {
     // a return value dummy integer to be used around the method
     INT retVal;
+    static base::Time prev = base::Time::now();
 
     // used to retrieve data about next buffered frame
     char* pTempBuf;
@@ -741,8 +742,9 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.setStatus(STATUS_VALID);
 
         // in imgInfo the device time is in 0.1 microS
-        frame.time = base::Time::fromMicroseconds(10 * imgInfo.u64TimestampDevice);
+        frame.time = base::Time::fromMicroseconds(imgInfo.u64TimestampDevice / 10);
         frame.received_time = base::Time::now();
+
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
@@ -795,8 +797,10 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.setStatus(STATUS_VALID);
 
         // in imgInfo the device time is in 0.1 microS
-        frame.time = base::Time::fromMicroseconds(10 * imgInfo.u64TimestampDevice);
+        frame.time = base::Time::fromMicroseconds(imgInfo.u64TimestampDevice / 10);
         frame.received_time = base::Time::now();
+        frame.setAttribute<double>("FramesPerSecond", 1.0e6 / (double)(frame.time-prev).toMicroseconds() );
+        prev = frame.time;
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
