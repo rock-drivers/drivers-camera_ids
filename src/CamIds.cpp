@@ -1083,11 +1083,13 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             if (IS_SUCCESS != is_Saturation(*this->pCam_, SATURATION_CMD_SET_VALUE, (void*) &value, sizeof(value))) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set saturation value");
             }
+            LOG_INFO("Set SaturationValue to %i",value);
             break;
         case int_attrib::PixelClock:
             if (IS_SUCCESS != is_SetPixelClock(*this->pCam_, value)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set pixel clock");
             }
+            LOG_INFO("Set PixelClock to %i",value);
             break;
         case int_attrib::BinningX:
             switch (value) {
@@ -1101,34 +1103,42 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
                 this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
                 this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
+                LOG_INFO_S << "Set horizontal binning to off";
                 break;
             case 2:
                 mode = IS_BINNING_2X_HORIZONTAL;
                 this->image_size_.width /= 2;
+                LOG_INFO("Set horizontal binning to %i",2)
                 break;
             case 3:
                 mode = IS_BINNING_3X_HORIZONTAL;
                 this->image_size_.width /= 3;
+                LOG_INFO("Set horizontal binning to %i",3)
                 break;
             case 4:
                 mode = IS_BINNING_4X_HORIZONTAL;
                 this->image_size_.width /= 4;
+                LOG_INFO("Set horizontal binning to %i",4)
                 break;
             case 5:
                 mode = IS_BINNING_5X_HORIZONTAL;
                 this->image_size_.width /= 5;
+                LOG_INFO("Set horizontal binning to %i",5)
                 break;
             case 6:
                 mode = IS_BINNING_6X_HORIZONTAL;
                 this->image_size_.width /= 6;
+                LOG_INFO("Set horizontal binning to %i",6)
                 break;
             case 8:
                 mode = IS_BINNING_8X_HORIZONTAL;
                 this->image_size_.width /= 8;
+                LOG_INFO("Set horizontal binning to %i",8)
                 break;
             case 16:
                 mode = IS_BINNING_16X_HORIZONTAL;
                 this->image_size_.width /= 16;
+                LOG_INFO("Set horizontal binning to %i",16)
                 break;
             default:
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-X factor");
@@ -1152,34 +1162,42 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
                 this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
                 this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
+                LOG_INFO_S << "Set vertical binning to off";
                 break;
             case 2:
                 mode = IS_BINNING_2X_VERTICAL;
                 this->image_size_.height /= 2;
+                LOG_INFO("Set vertical binning to %i",2);
                 break;
             case 3:
                 mode = IS_BINNING_3X_VERTICAL;
                 this->image_size_.height /= 3;
+                LOG_INFO("Set vertical binning to %i",3);
                 break;
             case 4:
                 mode = IS_BINNING_4X_VERTICAL;
                 this->image_size_.height /= 4;
+                LOG_INFO("Set vertical binning to %i",4);
                 break;
             case 5:
                 mode = IS_BINNING_5X_VERTICAL;
                 this->image_size_.height /= 5;
+                LOG_INFO("Set vertical binning to %i",5);
                 break;
             case 6:
                 mode = IS_BINNING_6X_VERTICAL;
                 this->image_size_.height /= 6;
+                LOG_INFO("Set vertical binning to %i",6);
                 break;
             case 8:
                 mode = IS_BINNING_8X_VERTICAL;
                 this->image_size_.height /= 8;
+                LOG_INFO("Set vertical binning to %i",8);
                 break;
             case 16:
                 mode = IS_BINNING_16X_VERTICAL;
                 this->image_size_.height /= 16;
+                LOG_INFO("Set vertical binning to %i",16);
                 break;
             default:
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-Y factor");
@@ -1247,6 +1265,7 @@ bool CamIds::setAttrib(const double_attrib::CamAttrib attrib, const double value
             if (IS_SUCCESS != is_SetFrameRate(*this->pCam_, value, &newFrameRate)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set frame rate");
             }
+            LOG_INFO("Set framerate to %5.1f", value);
             break;
         default:
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
@@ -1288,22 +1307,26 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
         if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 1, 0)) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
         }
+        LOG_INFO_S << "Set horizontal mirror to on.";
         break;
     case enum_attrib::MirrorXToOff:
         if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 0, 0)) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
         }
+        LOG_INFO_S << "Set horizontal mirror to off.";
         break;
     case enum_attrib::FrameStartTriggerModeToSoftware:
         if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_SOFTWARE) != IS_SUCCESS) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unabel to set trigger to software");
         }
+        LOG_INFO_S << "Set trigger mode to software.";
         break;
     case enum_attrib::FrameStartTriggerModeToFixedRate:
         // This is off in the context off ids camera.
         if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unabel to set trigger to off");
         }
+        LOG_INFO_S << "Set trigger mode to off.";
         break;
     case enum_attrib::ExposureModeToAuto:
         // turn on auto
@@ -1311,8 +1334,9 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
 
         // turn on auto exposure
         if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_ENABLE_AUTO_SHUTTER, &temp, NULL)) {
-            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto framerate");
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure to auto");
         }
+        LOG_INFO_S << "Set exposure to auto.";
         break;
     case enum_attrib::ExposureModeToManual:
         // turn off auto
@@ -1320,8 +1344,9 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
 
         // turn on auto exposure
         if (IS_SUCCESS != is_SetAutoParameter(*this->pCam_, IS_SET_ENABLE_AUTO_SHUTTER, &temp, NULL)) {
-            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set max auto framerate");
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure to manual");
         }
+        LOG_INFO_S << "Set exposure to manual.";
         break;
     default:
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
