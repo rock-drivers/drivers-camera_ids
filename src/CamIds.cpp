@@ -782,8 +782,8 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.setStatus(STATUS_VALID);
 
         // in imgInfo the device time is in 0.1 microS
-        frame.time.fromMicroseconds(10 * imgInfo.u64TimestampDevice);
-        frame.received_time = frame.time;
+        frame.time = base::Time::fromMicroseconds(10 * imgInfo.u64TimestampDevice);
+        frame.received_time = base::Time::now();
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
@@ -836,8 +836,8 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.setStatus(STATUS_VALID);
 
         // in imgInfo the device time is in 0.1 microS
-        frame.time.fromMicroseconds(10 * imgInfo.u64TimestampDevice);
-        frame.received_time = frame.time;
+        frame.time = base::Time::fromMicroseconds(10 * imgInfo.u64TimestampDevice);
+        frame.received_time = base::Time::now();
 
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
