@@ -394,55 +394,14 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     // set image size to the camera maximum
     this->image_size_.height    = (uint16_t) sensorInfo.nMaxHeight;
     this->image_size_.width     = (uint16_t) sensorInfo.nMaxWidth;
-
-    LOG_INFO_S << "Image size set to "
-            << this->image_size_.width << " x " << this->image_size_.height;
-
-    // color depth in bytes, set default RGB24
-    if (is_SetColorMode(*this->pCam_, IS_CM_BGR8_PACKED) != IS_SUCCESS) {
-        LOG_ERROR_S << "Unable to set color mode for camera "
-                << cam.unique_id << " (" << cam.display_name << ")";
-        this->close();
-        return false;
-    }
-
     this->image_mode_         = MODE_RGB;
     this->image_color_depth_  = 3;
 
-    // initialize the area of interest dimensions
-    IS_RECT rectAOI;
-
-    rectAOI.s32Width    = this->image_size_.width;
-    rectAOI.s32Height   = this->image_size_.height;
-    rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-    rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-
-    // set the area of interest of the camera
-    if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
-    }
+    setFrameSettings( this->image_size_, this->image_mode_, this->image_color_depth_);
+    setAttrib( double_attrib::FrameRate, 24);
 
     // set the trigger mode to software, image acquired when calling is_FreezeVideo()
-    if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
-        LOG_ERROR_S << "Unable to set trigger mode for camera "
-                << this->pCamInfo_->unique_id
-                << " (" << this->pCamInfo_->display_name << ")"
-                << " while attempting to open";
-        this->close();
-        return false;
-    }
-
-    double newFps;
-    if (is_SetFrameRate(*this->pCam_, 24, &newFps) != IS_SUCCESS) {
-        LOG_ERROR_S << "Unable to set frame rate for camera "
-                << this->pCamInfo_->unique_id
-                << " (" << this->pCamInfo_->display_name << ")"
-                << " while attempting to open";
-        this->close();
-        return false;
-    }
-
-    LOG_INFO_S << "Frame rate set to " << newFps;
+    setAttrib( enum_attrib::FrameStartTriggerModeToFixedRate);
 
     // initial grab mode set to stop
     this->act_grab_mode_ = Stop;
@@ -1331,6 +1290,17 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
         }
         break;
+    case enum_attrib::FrameStartTriggerModeToSoftware:
+        if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_SOFTWARE) != IS_SUCCESS) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unabel to set trigger to software");
+        }
+        break;
+    case enum_attrib::FrameStartTriggerModeToFixedRate:
+        // This is off in the context off ids camera.
+        if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_OFF) != IS_SUCCESS) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unabel to set trigger to off");
+        }
+        break;
     case enum_attrib::ExposureModeToAuto:
         // turn on auto
         temp = 1;
@@ -1405,6 +1375,8 @@ bool CamIds::isAttribAvail(const enum_attrib::CamAttrib attrib) {
     switch (attrib) {
     case enum_attrib::MirrorXToOn:
     case enum_attrib::MirrorXToOff:
+    case enum_attrib::FrameStartTriggerModeToSoftware:
+    case enum_attrib::FrameStartTriggerModeToFixedRate:
     case enum_attrib::ExposureModeToAuto:
     case enum_attrib::ExposureModeToManual:
         return true;
