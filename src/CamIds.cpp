@@ -262,6 +262,26 @@ int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
     return cameraList->dwCount;
 }
 
+
+std::string CamIds::doDiagnose() {
+
+    std::stringstream strstr;
+
+    // show CamInfo of the open camera 
+    const CamInfo *pcam_info;
+    try
+    {
+        pcam_info = getCameraInfo();
+        strstr << "Opened Camera:\n"; 
+        strstr << "Unique Id: " << pcam_info->unique_id << "\n";
+    }
+    catch(std::runtime_error e)
+    {
+        strstr << e.what() << "\n Cannot display CamInfo of the opened camera. \n";
+    }
+    return strstr.str();
+}
+
 //==============================================================================
 int CamIds::countCameras() const {
     INT numberOfCameras = 0;

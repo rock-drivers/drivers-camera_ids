@@ -323,7 +323,7 @@ public:
 //        /**
 //          * Does a camera diagnose.
 //          */
-//        std::string doDiagnose();
+           std::string doDiagnose();
 };
 
 } // end of camera namespace
