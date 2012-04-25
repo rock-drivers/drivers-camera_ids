@@ -11,11 +11,12 @@
   
   <depend package="base/types" />
   <depend package="drivers/camera_interface" />
+  <depend package="opencv" />
 
   <export>
     <cpp cflags="" lflags="" />
   </export>
 
   <versioncontrol type="git" url="" />
-  
+
 </package>
