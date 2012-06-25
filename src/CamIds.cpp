@@ -391,15 +391,6 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
         return false;
     }
 
-    // set image size to the camera maximum
-    this->image_size_.height    = (uint16_t) sensorInfo.nMaxHeight;
-    this->image_size_.width     = (uint16_t) sensorInfo.nMaxWidth;
-    this->image_mode_         = MODE_RGB;
-    this->image_color_depth_  = 3;
-
-    setFrameSettings( this->image_size_, this->image_mode_, this->image_color_depth_);
-    setAttrib( double_attrib::FrameRate, 24);
-
     // set the trigger mode to software, image acquired when calling is_FreezeVideo()
     setAttrib( enum_attrib::FrameStartTriggerModeToFixedRate);
 
@@ -868,17 +859,37 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
         return false;
     }
 
-    // initialize the area of interest dimensions
+    // get the area of interest dimensions
     IS_RECT rectAOI;
 
+    int ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI,
+            sizeof(rectAOI));
+
+    if (ret != IS_SUCCESS) {
+        std::stringstream ss;
+        ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to get AOI."
+            << " Returned " << ret;
+        throw std::runtime_error(ss.str());
+    }
+
+    // set new AOI values
     rectAOI.s32Width    = size.width;
     rectAOI.s32Height   = size.height;
-    rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-    rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
 
     // set the area of interest of the camera
-    if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+    ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, 
+            sizeof(rectAOI));
+
+    if (ret != IS_SUCCESS) {
+        std::stringstream ss;
+        ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to set AOI."
+            << " Returned " << ret;
+        IS_SIZE_2D iss;
+        if ( is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_SIZE_INC, (void*)&iss, 
+                    sizeof(iss)) == IS_SUCCESS ) {
+            ss << ". Sizeincr. is " << iss.s32Width << "/" << iss.s32Height;
+        }
+        throw std::runtime_error(ss.str());
     }
 
     // compute the channel count of the given mode
@@ -895,7 +906,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     int dataDepth = (color_depth * 8) / channelCount;
 
     // start from something
-    INT selectedMode = IS_CM_BGR8_PACKED;
+    INT selectedMode; 
 
     switch (mode) {
     case MODE_BAYER:
@@ -1004,9 +1015,50 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
         base::samples::frame::frame_mode_t& mode,
         uint8_t& color_depth)
 {
+    IS_RECT rectAOI;
+
+    int ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI,
+            sizeof(rectAOI));
+
+    if (ret != IS_SUCCESS) {
+        std::stringstream ss;
+        ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to get AOI."
+            << " Returned " << ret;
+        throw std::runtime_error(ss.str());
+    }
+    size.width = rectAOI.s32Width;
+    size.height = rectAOI.s32Height;
     size = this->image_size_;
-    mode = this->image_mode_;
     color_depth = this->image_color_depth_;
+    
+    int color_mode = is_SetColorMode(*this->pCam_, IS_GET_COLOR_MODE);
+
+    switch(color_mode) {
+        case IS_CM_BAYER_RG8:
+        case IS_CM_BAYER_RG12:
+        case IS_CM_BAYER_RG16:
+            mode = MODE_BAYER;
+            break;
+        case IS_CM_MONO8:
+        case IS_CM_MONO12:
+        case IS_CM_MONO16:
+            mode = MODE_GRAYSCALE;
+            break;
+        case IS_CM_RGB8_PACKED:
+            mode = MODE_RGB;
+            break;
+        case IS_CM_BGR8_PACKED:
+            mode = MODE_BGR;
+            break;
+        case IS_CM_RGBA8_PACKED:
+            mode = MODE_RGB32;
+            break;
+        case IS_CM_UYVY_PACKED:
+            mode = MODE_UYVY;
+            break;
+        default:
+            mode = MODE_UNDEFINED;
+    }
 
     return true;
 }
