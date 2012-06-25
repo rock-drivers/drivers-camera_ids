@@ -1085,7 +1085,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
     switch (attrib) {
         case int_attrib::ExposureValue:
-            temp = (double) value;
+            temp = ((double) value)/1000.;
             if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &temp, sizeof(temp))) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure");
             }
