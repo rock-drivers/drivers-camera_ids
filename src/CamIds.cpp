@@ -1043,6 +1043,7 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
         case IS_CM_MONO12:
         case IS_CM_MONO16:
             mode = MODE_GRAYSCALE;
+            color_depth = 1;
             break;
         case IS_CM_RGB8_PACKED:
             mode = MODE_RGB;
@@ -1082,12 +1083,15 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
     // used to set area of interest for camera sensor
     IS_RECT rectAOI;
+    int ret; // to get return value
 
     switch (attrib) {
         case int_attrib::ExposureValue:
             temp = ((double) value)/1000.;
-            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &temp, sizeof(temp))) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure");
+            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, 
+                        (void*) &temp, sizeof(temp))) {
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                        ": unable to set exposure");
             }
             break;
         case int_attrib::ExposureAutoMax:
@@ -1261,40 +1265,54 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + " binning-Y factor not supported by camera");
             }
             break;
+        // X-Offset
         case int_attrib::RegionX:
-            if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
-            }
+            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI, 
+                    sizeof(rectAOI));
+
+            if ( ret == IS_SUCCESS ) {
+                rectAOI.s32X = value;
+                UINT nAbsPos;
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_X_ABS, (void*)&nAbsPos, 
+                        sizeof(nAbsPos));
+
+                if ( ret == IS_SUCCESS && nAbsPos == IS_AOI_IMAGE_POS_ABSOLUTE )
+                    rectAOI.s32X |= IS_AOI_IMAGE_POS_ABSOLUTE;
             
-            // set image size to the camera maximum, and the x axis to the new size
-            // this->image_size_.width     = (uint16_t) value;
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, 
+                    (void*)&rectAOI, sizeof(rectAOI));
 
-            rectAOI.s32Width    = this->image_size_.width;
-            rectAOI.s32Height   = this->image_size_.height;
-            rectAOI.s32X        = value | IS_AOI_IMAGE_POS_ABSOLUTE;
-            rectAOI.s32Y        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-
-            // set the area of interest of the camera
-            if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+                if ( ret != IS_SUCCESS) {
+                    std::stringstream ss;
+                    ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to set AOI."
+                        << " Returned " << ret;
+                    throw std::runtime_error(ss.str());
+                }
             }
             break;
+        // Y-Offset
         case int_attrib::RegionY:
-            if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
-            }
+            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI, 
+                    sizeof(rectAOI));
 
-            // set image size to the camera maximum, and the y axis to the new size
-            //this->image_size_.height    = (uint16_t) value;
+            if ( ret == IS_SUCCESS ) {
+                rectAOI.s32Y = value;
+                UINT nAbsPos;
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_Y_ABS, (void*)&nAbsPos, 
+                        sizeof(nAbsPos));
 
-            rectAOI.s32Width    = this->image_size_.width;
-            rectAOI.s32Height   = this->image_size_.height;
-            rectAOI.s32X        = 0 | IS_AOI_IMAGE_POS_ABSOLUTE;
-            rectAOI.s32Y        = value | IS_AOI_IMAGE_POS_ABSOLUTE;
+                if ( ret == IS_SUCCESS && nAbsPos == IS_AOI_IMAGE_POS_ABSOLUTE )
+                    rectAOI.s32Y |= IS_AOI_IMAGE_POS_ABSOLUTE;
+            
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, 
+                    (void*)&rectAOI, sizeof(rectAOI));
 
-            // set the area of interest of the camera
-            if (is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, sizeof(rectAOI)) != IS_SUCCESS) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set AOI");
+                if ( ret != IS_SUCCESS) {
+                    std::stringstream ss;
+                    ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to set AOI."
+                        << " Returned " << ret;
+                    throw std::runtime_error(ss.str());
+                }
             }
             break;
         default:

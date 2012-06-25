@@ -18,11 +18,18 @@ int main(int argc, char**argv) {
         ("id", po::value<int>()->default_value(0), "camera id to open")
         ("width,w", po::value<int>(), "width of the image")
         ("height,h", po::value<int>(), "height of the image")
-        ("fps,f", po::value<double>()->default_value(15), "frame rate")
+        ("posx,x", po::value<int>(), "x position of aoi")
+        ("posy,y", po::value<int>(), "y position of aoi")
+        ("mirrorx", "mirror horizontally")
+        ("mirrory", "mirros vertically")
+        ("binningx", po::value<int>(), "binning in x direction")
+        ("binningy", po::value<int>(), "binning in y direction")
+        ("fps,f", po::value<double>()->default_value(15), "frame rate in Hz")
         ("framemode,m", po::value<int>(), "frame mode")
         ("colordepth,c", po::value<int>(), "color depth")
-        ("exposure,e", po::value<int>(), "exposure")
-        ("pixelclock,p", po::value<int>(), "pixelclock");
+        ("exposure,e", po::value<int>(), "exposure in us")
+        ("pixelclock,p", po::value<int>(), "pixelclock in MHz")
+        ("framebuffer,b",po::value<int>()->default_value(5),"framebuffer count");
    
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv,desc), vm); 
@@ -78,9 +85,24 @@ int main(int argc, char**argv) {
         cam.setAttrib(camera::int_attrib::PixelClock, vm["pixelclock"].as<int>());
     if ( vm.count("fps") )
         cam.setAttrib(camera::double_attrib::FrameRate, vm["fps"].as<double>());
+    if ( vm.count("exposure") )
+        cam.setAttrib(camera::int_attrib::ExposureValue, vm["exposure"].as<int>());
+    if ( vm.count("posx") )
+        cam.setAttrib(camera::int_attrib::RegionX, vm["posx"].as<int>());
+    if ( vm.count("posy") )
+        cam.setAttrib(camera::int_attrib::RegionY, vm["posy"].as<int>());
+    if ( vm.count("mirrorx") )
+        cam.setAttrib(camera::enum_attrib::MirrorXToOn);
+    if ( vm.count("mirrory") )
+        std::cout << "mirrory not implemented for now." << std::endl;
+        // cam.setAttrib(camera::enum_attrib::MirrorYToOn);
+    if ( vm.count("binningx") )
+        std::cout << "binning x is not tested yet" << std::endl;
+    if ( vm.count("binningy") )
+        std::cout << "binning x is not tested yet" << std::endl;
     
     // start grabbing
-    cam.grab(camera::Continuously, 5);
+    cam.grab(camera::Continuously, vm["framebuffer"].as<int>());
 
     base::samples::frame::Frame frame;
     base::Time prev = base::Time::now();
