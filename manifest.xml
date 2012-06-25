@@ -11,7 +11,7 @@
   
   <depend package="base/types" />
   <depend package="drivers/camera_interface" />
-  <depend package="opencv" />
+  <depend package="opencv" optional="1" />
 
   <export>
     <cpp cflags="" lflags="" />

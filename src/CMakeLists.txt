@@ -9,12 +9,15 @@ rock_library(camera_ids
 #set(module_name ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} ueye_api)
 
-find_package(Boost REQUIRED COMPONENTS program_options)
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
+pkg_check_modules(OPENCV QUIET opencv)
+if(OPENCV_FOUND)
+    find_package(Boost REQUIRED COMPONENTS program_options)
+    include_directories(${Boost_INCLUDE_DIRS})
+    link_directories(${Boost_LIBRARY_DIRS})
 
-rock_executable(test_bin test_cam.cpp
-    DEPS camera_ids
-    DEPS_PKGCONFIG opencv
-    DEPS_CMAKE Boost)
+    rock_executable(test_bin test_cam.cpp
+        DEPS camera_ids
+        DEPS_PKGCONFIG opencv
+        DEPS_CMAKE Boost)
 
+endif(OPENCV_FOUND)
