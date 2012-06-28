@@ -15,6 +15,7 @@ int main(int argc, char**argv) {
     desc.add_options()
         ("help", "show help")
         ("list", "show camera list")
+        ("blind", "without showing the image")
         ("id", po::value<int>()->default_value(0), "camera id to open")
         ("width,w", po::value<int>(), "width of the image")
         ("height,h", po::value<int>(), "height of the image")
@@ -113,22 +114,38 @@ int main(int argc, char**argv) {
     std::cout << "Ctrl-C for exit!" << std::endl;
     //for (int i = 0; i < nrFrames; ++i) {
     
-    while ( cv::waitKey(5) == -1 ) {
-        if ( cam.isFrameAvailable() ) {
-
-            base::Time cur = base::Time::now();
-            std::stringstream ss;
-            ss << "fps: " << 1. / (cur-prev).toSeconds();
-            prev = cur;
-            
-            cam.retrieveFrame(frame, 500);
-            if ( count %10 == 0) {
-                cv::Mat img = frame.convertToCvMat();
-                cv::putText(img, ss.str(), cv::Point(10,50), cv::FONT_HERSHEY_SIMPLEX,
-                    0.8, CV_RGB(255,0.0,0.0), 1, 8, false);
-                cv::imshow("frame", img);
+    if ( vm.count("blind") ) {
+        std::cout << "get for 10 s" << std::endl;
+        int fcnt;
+        base::Time start = base::Time::now();
+        while ( (base::Time::now()-start).toSeconds() < 10.0 ) {
+            if ( cam.isFrameAvailable() ) {
+                base::Time cur = base::Time::now();
+                std::cout << ++fcnt << " fps: " << 1. / (cur-prev).toSeconds();
+                prev = cur;
+                cam.retrieveFrame(frame, 50);
+                std::cout << " status: " << frame.getStatus() << std::endl;
             }
-            count++;
+        }
+
+    } else {
+        while ( cv::waitKey(5) == -1 ) {
+            if ( cam.isFrameAvailable() ) {
+
+                base::Time cur = base::Time::now();
+                std::stringstream ss;
+                ss << "fps: " << 1. / (cur-prev).toSeconds();
+                prev = cur;
+                
+                cam.retrieveFrame(frame, 500);
+                if ( count %10 == 0) {
+                    cv::Mat img = frame.convertToCvMat();
+                    cv::putText(img, ss.str(), cv::Point(10,50), cv::FONT_HERSHEY_SIMPLEX,
+                        0.8, CV_RGB(255,0.0,0.0), 1, 8, false);
+                    cv::imshow("frame", img);
+                }
+                count++;
+            }
         }
     }
     
