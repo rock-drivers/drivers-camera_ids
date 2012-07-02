@@ -1083,6 +1083,12 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
     // used to set area of interest for camera sensor
     IS_RECT rectAOI;
+
+    double lfps, lnfps;
+    is_SetFrameRate(*this->pCam_, IS_GET_FRAMERATE, &lfps);
+    double lexp;
+    is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &lexp, sizeof(lexp));
+
     int ret; // to get return value
 
     switch (attrib) {
@@ -1200,11 +1206,13 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-X factor");
                 break;
             }
-
+            mode |= is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_VERTICAL); 
             // after factor is chosen set it to the chosen value
             if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": binning-X factor not supported by camera");
             }
+            is_SetFrameRate(*this->pCam_, lfps, &lnfps);
+            is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             break;
         case int_attrib::BinningY:
             switch (value) {
@@ -1261,9 +1269,12 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             }
 
             // after factor is chosen set it to the chosen value
+            mode |= is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL); 
             if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + " binning-Y factor not supported by camera");
             }
+            is_SetFrameRate(*this->pCam_, lfps, &lnfps);
+            is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             break;
         // X-Offset
         case int_attrib::RegionX:
@@ -1288,6 +1299,8 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                         << " Returned " << ret;
                     throw std::runtime_error(ss.str());
                 }
+                is_SetFrameRate(*this->pCam_, lfps, &lnfps);
+                is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             }
             break;
         // Y-Offset
@@ -1313,6 +1326,8 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                         << " Returned " << ret;
                     throw std::runtime_error(ss.str());
                 }
+                is_SetFrameRate(*this->pCam_, lfps, &lnfps);
+                is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             }
             break;
         default:

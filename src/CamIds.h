@@ -269,6 +269,7 @@ public:
      */
     bool getFrameSettings(base::samples::frame::frame_size_t& size, base::samples::frame::frame_mode_t& mode, uint8_t& color_depth);
 
+
 //
 //        /**
 //          * Triggers a new frame if FrameStartTriggerMode is set to Software.

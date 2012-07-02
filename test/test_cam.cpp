@@ -98,9 +98,9 @@ int main(int argc, char**argv) {
         std::cout << "mirrory not implemented for now." << std::endl;
         // cam.setAttrib(camera::enum_attrib::MirrorYToOn);
     if ( vm.count("binningx") )
-        std::cout << "binning x is not tested yet" << std::endl;
+        cam.setAttrib(camera::int_attrib::BinningX, vm["binningx"].as<int>() );
     if ( vm.count("binningy") )
-        std::cout << "binning x is not tested yet" << std::endl;
+        cam.setAttrib(camera::int_attrib::BinningY, vm["binningy"].as<int>() );
     
     // start grabbing
     cam.grab(camera::Continuously, vm["framebuffer"].as<int>());
@@ -118,13 +118,15 @@ int main(int argc, char**argv) {
         std::cout << "get for 10 s" << std::endl;
         int fcnt;
         base::Time start = base::Time::now();
+        std::vector<double> fpslist;
         while ( (base::Time::now()-start).toSeconds() < 10.0 ) {
             if ( cam.isFrameAvailable() ) {
                 base::Time cur = base::Time::now();
-                std::cout << ++fcnt << " fps: " << 1. / (cur-prev).toSeconds();
+                //std::cout << ++fcnt << " fps: " << 1. / (cur-prev).toSeconds();
+                fpslist.push_back ( (cur-prev).toSeconds() );
                 prev = cur;
                 cam.retrieveFrame(frame, 50);
-                std::cout << " status: " << frame.getStatus() << std::endl;
+                //std::cout << " status: " << frame.getStatus() << std::endl;
             }
         }
 
