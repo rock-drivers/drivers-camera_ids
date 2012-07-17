@@ -1505,6 +1505,8 @@ bool CamIds::isAttribAvail(const enum_attrib::CamAttrib attrib) {
     switch (attrib) {
     case enum_attrib::MirrorXToOn:
     case enum_attrib::MirrorXToOff:
+    case enum_attrib::MirrorYToOn:
+    case enum_attrib::MirrorYToOff:
     case enum_attrib::FrameStartTriggerModeToSoftware:
     case enum_attrib::FrameStartTriggerModeToFixedRate:
     case enum_attrib::ExposureModeToAuto:
