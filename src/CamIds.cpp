@@ -871,11 +871,15 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             << " Returned " << ret;
         throw std::runtime_error(ss.str());
     }
+    LOG_INFO("Current AOI is w=%4d h=%4d x=%4d y=%4d", rectAOI.s32Width, 
+            rectAOI.s32Height, rectAOI.s32X, rectAOI.s32Y);
 
     // set new AOI values
     rectAOI.s32Width    = size.width;
     rectAOI.s32Height   = size.height;
 
+    LOG_INFO("Set AOI with w=%4d h=%4d x=%4d y=%4d", size.width, size.height, rectAOI.s32X,
+            rectAOI.s32Y);
     // set the area of interest of the camera
     ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, 
             sizeof(rectAOI));
@@ -1390,15 +1394,27 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
     switch (attrib) {
     case enum_attrib::MirrorXToOn:
         if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 1, 0)) {
-            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX");
         }
         LOG_INFO_S << "Set horizontal mirror to on.";
         break;
     case enum_attrib::MirrorXToOff:
         if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_LEFTRIGHT, 0, 0)) {
-            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorX ");
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while disabling mirrorX");
         }
         LOG_INFO_S << "Set horizontal mirror to off.";
+        break;
+    case enum_attrib::MirrorYToOn:
+        if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_UPDOWN, 1, 0)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while enabling mirrorY");
+        }
+        LOG_INFO_S << "Set vertical mirror to on.";
+        break;
+    case enum_attrib::MirrorYToOff:
+        if (IS_SUCCESS != is_SetRopEffect(*this->pCam_, IS_SET_ROP_MIRROR_UPDOWN, 0, 0)) {
+            throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while disabling mirrorY");
+        }
+        LOG_INFO_S << "Set vertical mirror to off.";
         break;
     case enum_attrib::FrameStartTriggerModeToSoftware:
         if (is_SetExternalTrigger(*this->pCam_, IS_SET_TRIGGER_SOFTWARE) != IS_SUCCESS) {

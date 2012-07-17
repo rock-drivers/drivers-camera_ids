@@ -95,8 +95,7 @@ int main(int argc, char**argv) {
     if ( vm.count("mirrorx") )
         cam.setAttrib(camera::enum_attrib::MirrorXToOn);
     if ( vm.count("mirrory") )
-        std::cout << "mirrory not implemented for now." << std::endl;
-        // cam.setAttrib(camera::enum_attrib::MirrorYToOn);
+        cam.setAttrib(camera::enum_attrib::MirrorYToOn);
     if ( vm.count("binningx") )
         cam.setAttrib(camera::int_attrib::BinningX, vm["binningx"].as<int>() );
     if ( vm.count("binningy") )
