@@ -22,6 +22,8 @@ typedef struct _UEYE_IMAGE {
     INT nImageID;               // id of the frame
     INT nImageSeqNum;           // frame sequence number
     INT nBufferSize;            // the buffer size in bytes
+
+    _UEYE_IMAGE() : pBuf(0), nImageID(0), nImageSeqNum(0), nBufferSize(0) {}
 } UEYE_IMAGE;
 
 namespace camera {
@@ -54,6 +56,8 @@ private:
      * Used when checking if new frames have arrived.
      */
     int nSeqCount_;
+
+    int mEventTimeout;
 
     /**
      * Retrieves camera information for a single camera.

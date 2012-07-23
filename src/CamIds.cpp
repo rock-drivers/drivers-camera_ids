@@ -482,6 +482,8 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
     // used to check return values of functions
     INT retVal;
 
+    bool ret = true;
+
     switch(mode) {
     case Stop:
         // never reached
@@ -535,23 +537,9 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 
         // disable events and exit the image queue
         is_ClearSequence(*this->pCam_);
-//        is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
+        is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
         is_ExitImageQueue(*this->pCam_);
-
-        // free the image memory allocated
-        for (int i = 0; i < this->nFrameBufLen_; ++i) {
-            is_FreeImageMem(*this->pCam_,
-                    this->pFrameBuf_[i].pBuf, this->pFrameBuf_[i].nImageID);
-        }
-
-        // clear the content of the buffer
-        if (this->pFrameBuf_ != NULL) {
-            delete[] pFrameBuf_;
-
-            // make sure to mark as NULL
-            this->pFrameBuf_    = NULL;
-            this->nFrameBufLen_ = 0;
-        }
+        clearBuffers();
 
         break;
 
@@ -560,7 +548,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
     //--------------------------------------------------------------------------
     case SingleFrame:
         // resize the buffer
-        if (this->pFrameBuf_ != NULL) {
+        /*if (this->pFrameBuf_ != NULL) {
             delete[] this->pFrameBuf_;
         }
         this->pFrameBuf_ = new UEYE_IMAGE[sizeof(UEYE_CAMERA_INFO)];
@@ -609,7 +597,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
                 this->close();
                 return false;
             }
-        }
+        }*/
         break;
 
     //--------------------------------------------------------------------------
@@ -620,77 +608,24 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
         throw std::runtime_error("MultiFrame not supported yet!");
         break;
 
-    //--------------------------------------------------------------------------
-    // capture continuous video
-    //--------------------------------------------------------------------------
     case Continuously:
-        // resize the buffer
-        if (this->pFrameBuf_ != NULL) {
-            delete[] this->pFrameBuf_;
-        }
-        this->pFrameBuf_ = new UEYE_IMAGE[buffer_len * sizeof(UEYE_CAMERA_INFO)];
-        this->nFrameBufLen_ = buffer_len;
-
-        // allocate the memory
-        for (int i = 0; i < buffer_len; ++i) {
-            retVal = is_AllocImageMem(*this->pCam_,
-                    this->image_size_.width, this->image_size_.height,
-                    this->image_color_depth_ * 8,
-                    &this->pFrameBuf_[i].pBuf, &this->pFrameBuf_[i].nImageID);
-
-            if (retVal != IS_SUCCESS) {
-                LOG_ERROR_S << "Unable to allocate image memory for camera "
-                        << this->pCamInfo_->unique_id
-                        << " (" << this->pCamInfo_->display_name << ")"
-                        << " while attempting to grab";
-                this->close();
-                return false;
-            }
-
-            this->pFrameBuf_[i].nImageSeqNum = i;
-            this->pFrameBuf_[i].nBufferSize = this->image_size_.width * this->image_size_.height
-                    * this->image_color_depth_;
-
-            // register the allocated memory
-            is_AddToSequence(*this->pCam_,
-                    this->pFrameBuf_[i].pBuf, this->pFrameBuf_[i].nImageID);
-        }
-
-        // install event handling
-//        is_EnableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
-
-        // enable queueing mode
-        is_InitImageQueue(*this->pCam_, 0);
-
-        // start capturing video
-        is_CaptureVideo(*this->pCam_, IS_WAIT); //TODO play around with wait values
+        ret = grabContiniousMode ( buffer_len ); 
         break;
 
-    //--------------------------------------------------------------------------
-    // should never reach here if used correctly
-    //--------------------------------------------------------------------------
     default:
         throw std::runtime_error("Grab mode not supported by camera!");
     }
 
     // update the current mode
-    this->act_grab_mode_ = mode;
-
-    return true;
+    if ( ret ) {
+        this->act_grab_mode_ = mode;
+        return true; 
+    } else
+        return false;
 }
 
 //==============================================================================
 bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout) {
-    // a return value dummy integer to be used around the method
-    INT retVal;
-    static base::Time prev = base::Time::now();
-
-    // used to retrieve data about next buffered frame
-    char* pTempBuf;
-    int nTempImageID;
-
-    // used to retrieve more info on an image
-    UEYEIMAGEINFO imgInfo;
 
     // depending on the active grabbing mode, acquire frame
     switch (this->act_grab_mode_) {
@@ -700,7 +635,7 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         break;
     case SingleFrame:
         // freeze the video for the single frame acquisition
-        if (is_FreezeVideo(*this->pCam_, timeout) != IS_SUCCESS) {
+        /* if (is_FreezeVideo(*this->pCam_, timeout) != IS_SUCCESS) {
             LOG_DEBUG_S << "Unable to freeze video for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
@@ -745,7 +680,7 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         // set dimensions, row size in bytes, image size in pixels
         frame.row_size      = imgInfo.dwImageWidth * this->image_color_depth_;
         frame.size.width    = imgInfo.dwImageWidth;
-        frame.size.height   = imgInfo.dwImageHeight;
+        frame.size.height   = imgInfo.dwImageHeight;*/
         break;
 
     case MultiFrame:
@@ -753,46 +688,105 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         break;
 
     case Continuously:
-        // get a frame
-        if (is_WaitForNextImage(*this->pCam_, timeout, &pTempBuf, &nTempImageID) != IS_SUCCESS) {
-            LOG_DEBUG_S << "Unable to retrieve next image for camera "
+        return retrieveContiniousMode(frame, timeout);
+        break;
+    default:
+        throw std::runtime_error("Grab mode not supported by camera!");
+    }
+
+    return true;
+}
+
+bool CamIds::allocBuffers( int buffer_cnt ) { 
+    INT retVal;
+    
+    this->pFrameBuf_ = new UEYE_IMAGE[buffer_len];
+    this->nFrameBufLen_ = buffer_len;
+
+    for (int i = 0; i < buffer_len; ++i) {
+        retVal = is_AllocImageMem(*this->pCam_,
+                this->image_size_.width, this->image_size_.height,
+                this->image_color_depth_ * 8,
+                &this->pFrameBuf_[i].pBuf, &this->pFrameBuf_[i].nImageID);
+
+        if (retVal != IS_SUCCESS) {
+            LOG_ERROR_S << "Unable to allocate image memory for camera "
                     << this->pCamInfo_->unique_id
                     << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame";
-            // set the status of the frame to invalid
-            frame.setStatus(STATUS_INVALID);
+                    << " while attempting to grab";
+            this->close();
             return false;
         }
 
-        // get more information on the image
-        if (is_GetImageInfo(*this->pCam_, nTempImageID, &imgInfo, sizeof(imgInfo))
-                != IS_SUCCESS) {
-            LOG_DEBUG_S << "Unable to retrieve image info for camera "
-                    << this->pCamInfo_->unique_id
-                    << " (" << this->pCamInfo_->display_name << ")"
-                    << " while attempting to retrieve frame";
-            // set the status of the frame to invalid
-            frame.setStatus(STATUS_INVALID);
-            return false;
+        this->pFrameBuf_[i].nImageSeqNum = i+1;
+        this->pFrameBuf_[i].nBufferSize = this->image_size_.width * this->image_size_.height
+                * this->image_color_depth_;
+
+        // register the allocated memory
+        is_AddToSequence(*this->pCam_,
+                this->pFrameBuf_[i].pBuf, this->pFrameBuf_[i].nImageID);
+    }
+    return true;
+}
+
+void CamIds::clearBuffers() {
+    
+    if (pFrameBuf_) {
+        
+        for ( int i=0; i<pFrameBufLen_; i++ ) {
+            is_FreeImageMem(*pCam_, pFrameBuf_[i].pBuf, pFrameBuf_[i].nImageID);
+            pFrameBuf_[i].pBuf = 0;
         }
 
-        // begin to fill in the output frame
-        frame.image.assign(pTempBuf,
-                pTempBuf + imgInfo.dwImageHeight * imgInfo.dwImageWidth * this->image_color_depth_);
+        delete[] pFrameBuf_;
+        pFrameBuf_ = 0;
+        nFrameBufLen_ = 0;
+    }
+}
 
-        // set the rolling frame counter
-        frame.attributes.clear();
-        frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
+/** Grab for the continous mode*/
+bool CamIds::grabContiniousMode(const int buffer_len = 1) {
+       
+    INT retVal;
 
-        // set status to valid as we succeeded capturing the frame
-        frame.setStatus(STATUS_VALID);
+    clearBuffers();
+    getImageSettings();
 
-        // in imgInfo the device time is in 0.1 microS
-        frame.time = base::Time::fromMicroseconds(imgInfo.u64TimestampDevice / 10);
-        frame.received_time = base::Time::now();
-        frame.setAttribute<double>("FramesPerSecond", 1.0e6 / (double)(frame.time-prev).toMicroseconds() );
-        prev = frame.time;
+    if (!allocBuffers(buffer_len)) return false;
+    // install event handling
+    is_EnableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
 
+    // enable queueing mode
+    is_InitImageQueue(*this->pCam_, 0);
+
+    // start capturing video
+    is_CaptureVideo(*this->pCam_, IS_WAIT); //TODO play around with wait values
+
+    return true;
+}
+
+
+/** Retireve a frame in the continous mode */
+bool CamIds::retrieveFrameContiniousMode( base::samles::frame::Frame& frame, 
+        const int timeout) {
+
+        INT dummy;
+        int ret = IS_SUCCESS;
+        char *plast = NULL, *pdummy = NULL;
+        int inum, iid;
+        UEYEIMAGEINFO imgInfo;
+
+        ret = is_GetActSeqBuf ( *this->pCam_, &dummy, pdummy, plast );
+        inum = getFrameBuf(plast).nImageSeqNum;
+        iid  = getFrameBuf(plast).nImageID;
+
+        is_GetImageInfo(*this->pCam_, iid, &imgInfo, sizeof(imgInfo))
+
+        ret = is_LockSeqBuf ( *pCam_, inum, plast );
+
+        frame.setImage(plast, image_size);
+        is_UnlockSeqBuf(*this->pCam_, inum, plast);
+        
         // set the color mode of the frame, we are using RGB24
         frame.frame_mode = this->image_mode_;
         frame.pixel_size = Frame::getChannelCount(this->image_mode_);
@@ -802,28 +796,52 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         frame.row_size      = imgInfo.dwImageWidth * this->image_color_depth_;
         frame.size.width    = imgInfo.dwImageWidth;
         frame.size.height   = imgInfo.dwImageHeight;
+        // set status to valid as we succeeded capturing the frame
+        frame.setStatus(STATUS_VALID);
+        // in imgInfo the device time is in 0.1 microS
+        frame.time = base::Time::fromMicroseconds(imgInfo.u64TimestampDevice / 10);
+        frame.received_time = base::Time::now();
 
-        // unlock the buffer, in queue mode, image buffers are automatically locked
-        is_UnlockSeqBuf(*this->pCam_, nTempImageID, pTempBuf);
-        break;
-    default:
-        throw std::runtime_error("Grab mode not supported by camera!");
-    }
-
-    return true;
+        // set the rolling frame counter
+        frame.attributes.clear();
+        frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
 }
 
-//==============================================================================
-bool CamIds::isFrameAvailable() {
-    // get the current camera sequence count
-    int nTempSeqCount = is_CameraStatus(*this->pCam_, IS_SEQUENCE_CNT, IS_GET_STATUS);
-    int temp = this->nSeqCount_;
-    this->nSeqCount_ = nTempSeqCount;
-
-    if (this->act_grab_mode_ != Stop && nTempSeqCount != temp)
+/** Checks weather a frame is available in continous mode */
+bool CamIds::isFrameAvailableContiniousMode () {
+    if ( is_WaitEven(*this->pCam_, IS_SET_EVENT_FRAME, 10) == IS_SUCCESS )
         return true;
+    else
+        return false;
+}
 
-    return false;
+bool CamIds::isFrameAvailable() {
+
+    switch (act_grab_mode_) {
+    case CONTINOUS:
+        return isFrameAvailableContiniousMode();
+    default:
+        return false;
+    }
+
+}
+
+
+const UEYE_IMAGE& CamIds::getFrameBuf ( char* pbuffer ) {
+
+    if ( !pbuffer ) 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
+                ": zero pointer given");
+    
+    if ( !pFrameBuffer ) 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
+                ": no frame buffers");
+
+    for ( int i=0; i < nFrameBufLen_; i++ )
+        if ( pFrameBuf_[i].pBuf == pbuffer ) return i;
+
+    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
+            ": invalid image pointer");
 }
 
 //==============================================================================
@@ -1080,7 +1098,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     double red, blue;
 
     // binning mode
-    INT mode;
+    INT mode, cur_mode;
 
     // used to retrieve camera sensor info
     SENSORINFO sensorInfo;
@@ -1168,7 +1186,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                 }
 
                 this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
-                this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
+                //this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
                 LOG_INFO_S << "Set horizontal binning to off";
                 break;
             case 2:
@@ -1210,8 +1228,12 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-X factor");
                 break;
             }
-            mode |= is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_VERTICAL); 
             // after factor is chosen set it to the chosen value
+            cur_mode = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
+            if ( mode == IS_BINNING_DISABLE )
+                mode = cur_mode;
+            else if ( cur_mode != IS_BINNING_DISABLE )
+                mode |= cur_mode;
             if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": binning-X factor not supported by camera");
             }
@@ -1228,7 +1250,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                     throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
                 }
 
-                this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
+                //this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
                 this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
                 LOG_INFO_S << "Set vertical binning to off";
                 break;
@@ -1273,7 +1295,11 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             }
 
             // after factor is chosen set it to the chosen value
-            mode |= is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL); 
+            cur_mode = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
+            if ( mode == IS_BINNING_DISABLE )
+                mode = cur_mode;
+            else if ( cur_mode != IS_BINNING_DISABLE )
+                mode |= cur_mode;
             if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
                 throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + " binning-Y factor not supported by camera");
             }
