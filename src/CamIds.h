@@ -68,6 +68,19 @@ private:
      */
     CamInfo fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) const;
 
+    const UEYE_IMAGE& getFrameBuf ( char* pbuffer );
+
+protected:
+    bool allocBuffers( int buffer_cnt );
+    void clearBuffers();
+
+    bool grabContinuousMode( const int buffer_len = 1);
+    bool retrieveFrameContinuousMode( base::samples::frame::Frame& frame, 
+            const int timeout );
+    bool isFrameAvailableContinuousMode();
+    bool grabStopFromContinuousMode();
+    
+
 public:
     //======================================================================
     // Inherited methods.
@@ -87,6 +100,9 @@ public:
      * Destructor.
      */
     virtual ~CamIds();
+
+    /** The event timeout specifies how long to wait for an event in ms. */
+    void setEventTimeout ( int timeout = 10 ) { mEventTimeout = timeout; }
 
     /**
      * Lists all available cameras.
@@ -174,6 +190,7 @@ public:
      */
     bool isFrameAvailable();
 
+
 //        /**
 //          * Skips all buffered frame beside the last one.
 //          */
@@ -184,25 +201,25 @@ public:
 //          */
 //        bool setIpSettings(const CamInfo& cam, const IPSettings& ip_settings) const;
 
-        /**
-          * Sets the value of an integer attribute.
-          */
-        bool setAttrib(const int_attrib::CamAttrib attrib, const int value);
+    /**
+      * Sets the value of an integer attribute.
+      */
+    bool setAttrib(const int_attrib::CamAttrib attrib, const int value);
 
-        /**
-          * Sets the value of a double attribute.
-          */
-        bool setAttrib(const double_attrib::CamAttrib attrib, const double value);
+    /**
+      * Sets the value of a double attribute.
+      */
+    bool setAttrib(const double_attrib::CamAttrib attrib, const double value);
 
-        /**
-          * Sets the value of a string attribute.
-          */
-        bool setAttrib(const str_attrib::CamAttrib attrib, const std::string value);
+    /**
+      * Sets the value of a string attribute.
+      */
+    bool setAttrib(const str_attrib::CamAttrib attrib, const std::string value);
 
-        /**
-          * Sets the value of an enum attribute.
-          */
-        bool setAttrib(const enum_attrib::CamAttrib attrib);
+    /**
+      * Sets the value of an enum attribute.
+      */
+    bool setAttrib(const enum_attrib::CamAttrib attrib);
 
     /**
      * Checks if an integer attribute is available.
@@ -257,7 +274,10 @@ public:
      * @param resize_frames boolean value to control whether or not to resize frames
      * @return true if successful
      */
-    bool setFrameSettings(const base::samples::frame::frame_size_t size, const base::samples::frame::frame_mode_t mode, const uint8_t color_depth, const bool resize_frames = true);
+    bool setFrameSettings( const base::samples::frame::frame_size_t size, 
+                           const base::samples::frame::frame_mode_t mode, 
+                           const uint8_t color_depth, 
+                           const bool resize_frames = true);
 
 //        /**
 //          * Sets the camera frame settings to the values of the frame.
@@ -271,7 +291,9 @@ public:
      * @param color_depth output destination color_depth
      * @return true if successful
      */
-    bool getFrameSettings(base::samples::frame::frame_size_t& size, base::samples::frame::frame_mode_t& mode, uint8_t& color_depth);
+    bool getFrameSettings( base::samples::frame::frame_size_t& size, 
+                           base::samples::frame::frame_mode_t& mode, 
+                           uint8_t& color_depth);
 
 
 //
@@ -325,10 +347,8 @@ public:
 //          */
 //        int getFileDescriptor() const;
 
-//        /**
-//          * Does a camera diagnose.
-//          */
-           std::string doDiagnose();
+    /** Does a camera diagnose. */
+    std::string doDiagnose();
 };
 
 } // end of camera namespace

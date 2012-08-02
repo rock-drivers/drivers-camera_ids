@@ -139,7 +139,9 @@ int main(int argc, char**argv) {
                 prev = cur;
                 
                 cam.retrieveFrame(frame, 500);
-                if ( count %10 == 0) {
+                ss << " size: " << frame.size.width << " x " << frame.size.height;
+                ss << " cnt: " << frame.getAttribute<uint64_t>("FrameCount");
+                if ( count %1 == 0) {
                     cv::Mat img = frame.convertToCvMat();
                     cv::putText(img, ss.str(), cv::Point(10,50), cv::FONT_HERSHEY_SIMPLEX,
                         0.8, CV_RGB(255,0.0,0.0), 1, 8, false);
