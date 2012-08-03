@@ -541,7 +541,7 @@ bool CamIds::grabContinuousMode(const int buffer_len) {
     is_InitImageQueue(*this->pCam_, 0);
 
     // start capturing video
-    is_CaptureVideo(*this->pCam_, IS_WAIT); //TODO play around with wait values
+    is_CaptureVideo(*this->pCam_, IS_DONT_WAIT); //TODO play around with wait values
 
     return true;
 }
