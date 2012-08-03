@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
 #include <boost/program_options.hpp>
@@ -130,26 +131,34 @@ int main(int argc, char**argv) {
         }
 
     } else {
+        std::vector<double> fps;
+        unsigned int cnt = 0;
         while ( cv::waitKey(5) == -1 ) {
             if ( cam.isFrameAvailable() ) {
 
-                base::Time cur = base::Time::now();
+                cam.retrieveFrame(frame, 100);
+
+                base::Time cur = frame.time;
                 std::stringstream ss;
-                ss << "fps: " << 1. / (cur-prev).toSeconds();
+                double period = (cur - prev).toSeconds();
+                if (cnt>0) fps.push_back(1./period);
+                ss << "fps: " << 1. / period;
                 prev = cur;
+                cnt ++;
                 
-                cam.retrieveFrame(frame, 500);
                 ss << " size: " << frame.size.width << " x " << frame.size.height;
                 ss << " cnt: " << frame.getAttribute<uint64_t>("FrameCount");
-                if ( count %1 == 0) {
-                    cv::Mat img = frame.convertToCvMat();
-                    cv::putText(img, ss.str(), cv::Point(10,50), cv::FONT_HERSHEY_SIMPLEX,
-                        0.8, CV_RGB(255,0.0,0.0), 1, 8, false);
-                    cv::imshow("frame", img);
-                }
-                count++;
+                cv::Mat img = frame.convertToCvMat();
+                cv::putText(img, ss.str(), cv::Point(10,20), cv::FONT_HERSHEY_SIMPLEX,
+                    0.5, CV_RGB(128,255,0.0), 1, 8, false);
+                cv::imshow("frame", img);
             }
         }
+        std::cout << "Received " << cnt << " frames." << std::endl;
+        std::cout << "min fps: " << *std::min_element(fps.begin(), fps.end()) 
+            << std::endl;
+        std::cout << "max fps: " << *std::max_element(fps.begin(), fps.end()) 
+            << std::endl;
     }
     
     cam.grab(camera::Stop, 0);
