@@ -579,6 +579,7 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         timeString << imgInfo.TimestampSystem.wYear << imgInfo.TimestampSystem.wMonth << imgInfo.TimestampSystem.wDay;
         timeString << "-" << imgInfo.TimestampSystem.wHour << ":" << imgInfo.TimestampSystem.wMinute << ":";
         timeString << imgInfo.TimestampSystem.wSecond << imgInfo.TimestampSystem.wMilliseconds << "000"; //get microseconds
+        LOG_DEBUG_S << timeString;
         frame.time = base::Time::fromString(timeString.str());
 
         frame.received_time = base::Time::now();
