@@ -572,19 +572,11 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         is_UnlockSeqBuf(*this->pCam_, inum, plast);
         
         frame.setStatus(STATUS_VALID);
-        //frame.time = base::Time::fromMicroseconds((unsigned long long)(imgInfo.TimestampSystem.wMilliseconds * 1000));
         
         //generate base::Time object with givend camera device time synchronised to system time.
         frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay, 
                                                imgInfo.TimestampSystem.wHour, imgInfo.TimestampSystem.wMinute, imgInfo.TimestampSystem.wSecond,
                                                imgInfo.TimestampSystem.wMilliseconds, 0);
-
-        LOG_DEBUG_S <<  base::Time::s_fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay, 
-                                               imgInfo.TimestampSystem.wHour, imgInfo.TimestampSystem.wMinute, imgInfo.TimestampSystem.wSecond,
-                                               imgInfo.TimestampSystem.wMilliseconds, 0);
-
-        LOG_DEBUG_S << "Date: " << imgInfo.TimestampSystem.wYear << "." << imgInfo.TimestampSystem.wMonth << "." << imgInfo.TimestampSystem.wDay;
-        LOG_DEBUG_S << "Time: " << imgInfo.TimestampSystem.wHour << ":" << imgInfo.TimestampSystem.wMinute << ":" << imgInfo.TimestampSystem.wSecond;
 
         frame.received_time = base::Time::now();
 
