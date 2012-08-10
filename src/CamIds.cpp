@@ -575,12 +575,9 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         //frame.time = base::Time::fromMicroseconds((unsigned long long)(imgInfo.TimestampSystem.wMilliseconds * 1000));
         
         //generate base::Time object with givend camera device time synchronised to system time.
-        std::stringstream timeString;
-        timeString << imgInfo.TimestampSystem.wYear << imgInfo.TimestampSystem.wMonth << imgInfo.TimestampSystem.wDay;
-        timeString << "-" << imgInfo.TimestampSystem.wHour << ":" << imgInfo.TimestampSystem.wMinute << ":";
-        timeString << imgInfo.TimestampSystem.wSecond << ":" << imgInfo.TimestampSystem.wMilliseconds << "000"; //get microseconds
-        LOG_DEBUG_S << timeString.str();
-        frame.time = base::Time::fromString(timeString.str());
+        frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay, 
+                                               imgInfo.TimestampSystem.wHour, imgInfo.TimestampSystem.wMinute, imgInfo.TimestampSystem.wSecond,
+                                               imgInfo.TimestampSystem.wMilliseconds, 0);
 
         frame.received_time = base::Time::now();
 
