@@ -3,4 +3,7 @@
 cmake_minimum_required(VERSION 2.6)
 include($ENV{ROCK_CMAKE_MACROS}/Rock.cmake)
 rock_init(camera_ids 0.1)
+
+add_subdirectory(configure)
+
 rock_standard_layout()
