@@ -1,6 +1,6 @@
 # for ueye
-include_directories(/usr/local/include)
-link_directories (/use/local/lib)
+message(STATUS "-DAPI_VERSION=${API_VERSION}")
+add_definitions(-DAPI_VERSION=${API_VERSION})
 
 rock_library(camera_ids
     SOURCES CamIds.cpp

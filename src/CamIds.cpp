@@ -92,8 +92,8 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
         UEYE_ETH_DEVICE_INFO ethDeviceInfo;
 #if API_VERSION >= 4000
         if (is_DeviceInfo(uEyeCamInfo->dwDeviceID | IS_USE_DEVICE_ID,
-                &ethDeviceInfo, sizeof(UEYE_ETH_DEVICE_INFO))
-                != IS_SUCCESS)
+                IS_DEVICE_INFO_CMD_GET_DEVICE_INFO, &ethDeviceInfo, 
+                sizeof(UEYE_ETH_DEVICE_INFO)) != IS_SUCCESS)
 #else
         if (is_GetEthDeviceInfo(uEyeCamInfo->dwDeviceID | IS_USE_DEVICE_ID,
                 &ethDeviceInfo, sizeof(UEYE_ETH_DEVICE_INFO))
@@ -942,7 +942,8 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             break;
         case int_attrib::PixelClock:
 #if API_VERSION >= 4000
-            if (IS_SUCCESS != is_PixelClock(*this->pCam_, value)) {
+            if (IS_SUCCESS != is_PixelClock(*this->pCam_, IS_PIXELCLOCK_CMD_SET,
+                        (void*)&value, sizeof(value))) {
 #else
             if (IS_SUCCESS != is_SetPixelClock(*this->pCam_, value)) {
 #endif
