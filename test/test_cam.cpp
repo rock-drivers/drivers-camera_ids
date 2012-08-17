@@ -98,13 +98,15 @@ int main(int argc, char**argv) {
         cam.setAttrib(camera::enum_attrib::MirrorXToOn);
     if ( vm.count("mirrory") )
         cam.setAttrib(camera::enum_attrib::MirrorYToOn);
+    // for width and height always set the values before binning
+    // (e.g. setting width=640 with binningx=2 gives an image width of 320)
     if ( vm.count("binningx") )
         cam.setAttrib(camera::int_attrib::BinningX, vm["binningx"].as<int>() );
     if ( vm.count("binningy") )
         cam.setAttrib(camera::int_attrib::BinningY, vm["binningy"].as<int>() );
 
-    // these settings should be made after setting the geometry because the value range
-    // changes with the image size
+    // these settings should be made after setting the image geometry because the 
+    // value range of the properties changes with the image size
     if ( vm.count("pixelclock") )
         cam.setAttrib(camera::int_attrib::PixelClock, vm["pixelclock"].as<int>());
     if ( vm.count("fps") )

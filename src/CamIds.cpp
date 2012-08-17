@@ -857,6 +857,65 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
     return true;
 }
 
+INT CamIds::BinningXFactorToMode(int factor) {
+    switch (factor) {
+    case 1: return IS_BINNING_DISABLE;
+    case 2: return IS_BINNING_2X_HORIZONTAL;
+    case 3: return IS_BINNING_3X_HORIZONTAL;
+    case 4: return IS_BINNING_4X_HORIZONTAL;
+    case 5: return IS_BINNING_5X_HORIZONTAL;
+    case 6: return IS_BINNING_6X_HORIZONTAL;
+    case 8: return IS_BINNING_8X_HORIZONTAL;
+    case 16: return IS_BINNING_16X_HORIZONTAL;
+    default:
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                ": unsupported BinningX factor");
+    }
+}
+
+INT CamIds::BinningYFactorToMode(int factor) {
+    switch (factor) {
+    case 1: return IS_BINNING_DISABLE;
+    case 2: return IS_BINNING_2X_VERTICAL;
+    case 3: return IS_BINNING_3X_VERTICAL;
+    case 4: return IS_BINNING_4X_VERTICAL;
+    case 5: return IS_BINNING_5X_VERTICAL;
+    case 6: return IS_BINNING_6X_VERTICAL;
+    case 8: return IS_BINNING_8X_VERTICAL;
+    case 16: return IS_BINNING_16X_VERTICAL;
+    default:
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                ": unsupported BinningY factor");
+    }
+}
+
+void CamIds::setBinningX(int factor) {
+
+    INT mode = BinningXFactorToMode(factor);
+    this->image_size_.width /= factor;
+    
+    int factor_y = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_VERTICAL);
+    mode |= BinningYFactorToMode(factor_y);
+
+    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                ": BinningX factor not supported by camera");
+}
+
+void CamIds::setBinningY( int factor ) {
+    
+    INT mode = BinningYFactorToMode(factor);
+    this->image_size_.height /= factor;
+    
+    int factor_x = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
+    mode |= BinningXFactorToMode(factor_x);
+
+    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                ": BinningY factor not supported by camera");
+}
+
+
 //==============================================================================
 bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     // camera is not open
@@ -867,9 +926,6 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     // some temporary variables
     double temp;
     double red, blue;
-
-    // binning mode
-    INT mode, cur_mode;
 
     // used to retrieve camera sensor info
     SENSORINFO sensorInfo;
@@ -952,135 +1008,10 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             LOG_INFO("Set PixelClock to %i",value);
             break;
         case int_attrib::BinningX:
-            switch (value) {
-            case 1:
-                mode = IS_BINNING_DISABLE;
-
-                // we also need to adjust the image size
-                if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-                    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
-                }
-
-                this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
-                //this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
-                LOG_INFO_S << "Set horizontal binning to off";
-                break;
-            case 2:
-                mode = IS_BINNING_2X_HORIZONTAL;
-                this->image_size_.width /= 2;
-                LOG_INFO("Set horizontal binning to %i",2)
-                break;
-            case 3:
-                mode = IS_BINNING_3X_HORIZONTAL;
-                this->image_size_.width /= 3;
-                LOG_INFO("Set horizontal binning to %i",3)
-                break;
-            case 4:
-                mode = IS_BINNING_4X_HORIZONTAL;
-                this->image_size_.width /= 4;
-                LOG_INFO("Set horizontal binning to %i",4)
-                break;
-            case 5:
-                mode = IS_BINNING_5X_HORIZONTAL;
-                this->image_size_.width /= 5;
-                LOG_INFO("Set horizontal binning to %i",5)
-                break;
-            case 6:
-                mode = IS_BINNING_6X_HORIZONTAL;
-                this->image_size_.width /= 6;
-                LOG_INFO("Set horizontal binning to %i",6)
-                break;
-            case 8:
-                mode = IS_BINNING_8X_HORIZONTAL;
-                this->image_size_.width /= 8;
-                LOG_INFO("Set horizontal binning to %i",8)
-                break;
-            case 16:
-                mode = IS_BINNING_16X_HORIZONTAL;
-                this->image_size_.width /= 16;
-                LOG_INFO("Set horizontal binning to %i",16)
-                break;
-            default:
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-X factor");
-                break;
-            }
-            // after factor is chosen set it to the chosen value
-            cur_mode = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
-            if ( mode == IS_BINNING_DISABLE )
-                mode = cur_mode;
-            else if ( cur_mode != IS_BINNING_DISABLE )
-                mode |= cur_mode;
-            if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": binning-X factor not supported by camera");
-            }
-            is_SetFrameRate(*this->pCam_, lfps, &lnfps);
-            is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
+            setBinningX(value);
             break;
         case int_attrib::BinningY:
-            switch (value) {
-            case 1:
-                mode = IS_BINNING_DISABLE;
-
-                // we also need to adjust the image size
-                if (is_GetSensorInfo(*this->pCam_, &sensorInfo) != IS_SUCCESS) {
-                    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": error while retrieving sensor info");
-                }
-
-                //this->image_size_.width  = (uint16_t) sensorInfo.nMaxWidth;
-                this->image_size_.height = (uint16_t) sensorInfo.nMaxHeight;
-                LOG_INFO_S << "Set vertical binning to off";
-                break;
-            case 2:
-                mode = IS_BINNING_2X_VERTICAL;
-                this->image_size_.height /= 2;
-                LOG_INFO("Set vertical binning to %i",2);
-                break;
-            case 3:
-                mode = IS_BINNING_3X_VERTICAL;
-                this->image_size_.height /= 3;
-                LOG_INFO("Set vertical binning to %i",3);
-                break;
-            case 4:
-                mode = IS_BINNING_4X_VERTICAL;
-                this->image_size_.height /= 4;
-                LOG_INFO("Set vertical binning to %i",4);
-                break;
-            case 5:
-                mode = IS_BINNING_5X_VERTICAL;
-                this->image_size_.height /= 5;
-                LOG_INFO("Set vertical binning to %i",5);
-                break;
-            case 6:
-                mode = IS_BINNING_6X_VERTICAL;
-                this->image_size_.height /= 6;
-                LOG_INFO("Set vertical binning to %i",6);
-                break;
-            case 8:
-                mode = IS_BINNING_8X_VERTICAL;
-                this->image_size_.height /= 8;
-                LOG_INFO("Set vertical binning to %i",8);
-                break;
-            case 16:
-                mode = IS_BINNING_16X_VERTICAL;
-                this->image_size_.height /= 16;
-                LOG_INFO("Set vertical binning to %i",16);
-                break;
-            default:
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unsupported binning-Y factor");
-                break;
-            }
-
-            // after factor is chosen set it to the chosen value
-            cur_mode = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
-            if ( mode == IS_BINNING_DISABLE )
-                mode = cur_mode;
-            else if ( cur_mode != IS_BINNING_DISABLE )
-                mode |= cur_mode;
-            if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + " binning-Y factor not supported by camera");
-            }
-            is_SetFrameRate(*this->pCam_, lfps, &lnfps);
-            is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
+            setBinningY(value);
             break;
         // X-Offset
         case int_attrib::RegionX:

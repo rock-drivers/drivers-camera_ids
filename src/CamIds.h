@@ -79,7 +79,11 @@ protected:
             const int timeout );
     bool isFrameAvailableContinuousMode();
     bool grabStopFromContinuousMode();
-    
+
+    INT BinningXFactorToMode( int factor );
+    INT BinningYFactorToMode( int factor );
+    void setBinningX( int factor ); 
+    void setBinningY( int factor ); 
 
 public:
     //======================================================================
