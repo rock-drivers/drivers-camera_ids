@@ -1,3 +1,7 @@
+/** \file test_cam.cpp
+ * Test application for the camera_ids driver.
+ */
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -42,9 +46,10 @@ int main(int argc, char**argv) {
         return 1;
     }
     
-    camera::CamIds cam;
+    camera::CamIds cam; //instanciate the driver class
 
     if (vm.count("list")) {
+        // Shows a list of all availavle cameras.
 
         std::vector<camera::CamInfo> camera_list;
 
@@ -56,12 +61,13 @@ int main(int argc, char**argv) {
         return 1;
     }
 
+    // open takse a CamInfo object to indentify the camera to open vie the unique_id
+    // in case none is given it takes the first available (see the list).
     camera::CamInfo cam_info;
     cam_info.unique_id = vm["id"].as<int>();
-
     cam.open(cam_info);
 
-    //Frame settings
+    // Get initial frame settings
     frame_size_t fsize;
     frame_mode_t fmode;
     uint8_t cdepth;
@@ -70,7 +76,7 @@ int main(int argc, char**argv) {
         " depth: " << (int)cdepth << " mode: " << fmode <<  std::endl;
 
 
-    // test attributes here
+    // set the frame attributes here
     if (vm.count("width") )
         fsize.width = vm["width"].as<int>();
     if (vm.count("height") )
@@ -83,12 +89,7 @@ int main(int argc, char**argv) {
         " depth: " << (int)cdepth << " mode: " << fmode <<  std::endl;
     cam.setFrameSettings(fsize, fmode, cdepth, true);
 
-    if ( vm.count("pixelclock") )
-        cam.setAttrib(camera::int_attrib::PixelClock, vm["pixelclock"].as<int>());
-    if ( vm.count("fps") )
-        cam.setAttrib(camera::double_attrib::FrameRate, vm["fps"].as<double>());
-    if ( vm.count("exposure") )
-        cam.setAttrib(camera::int_attrib::ExposureValue, vm["exposure"].as<int>());
+    // set further attributes here
     if ( vm.count("posx") )
         cam.setAttrib(camera::int_attrib::RegionX, vm["posx"].as<int>());
     if ( vm.count("posy") )
@@ -101,8 +102,17 @@ int main(int argc, char**argv) {
         cam.setAttrib(camera::int_attrib::BinningX, vm["binningx"].as<int>() );
     if ( vm.count("binningy") )
         cam.setAttrib(camera::int_attrib::BinningY, vm["binningy"].as<int>() );
+
+    // these settings should be made after setting the geometry because the value range
+    // changes with the image size
+    if ( vm.count("pixelclock") )
+        cam.setAttrib(camera::int_attrib::PixelClock, vm["pixelclock"].as<int>());
+    if ( vm.count("fps") )
+        cam.setAttrib(camera::double_attrib::FrameRate, vm["fps"].as<double>());
+    if ( vm.count("exposure") )
+        cam.setAttrib(camera::int_attrib::ExposureValue, vm["exposure"].as<int>());
     
-    // start grabbing
+    // start grabbing in continious mode
     cam.grab(camera::Continuously, vm["framebuffer"].as<int>());
 
     base::samples::frame::Frame frame;
@@ -115,18 +125,20 @@ int main(int argc, char**argv) {
     //for (int i = 0; i < nrFrames; ++i) {
     
     if ( vm.count("blind") ) {
+        // blind capture
         std::cout << "get for 10 s" << std::endl;
         int fcnt;
         base::Time start = base::Time::now();
         std::vector<double> fpslist;
         while ( (base::Time::now()-start).toSeconds() < 10.0 ) {
+            // caputring is to wait for a new image first
+            // isFrameAvailable waits a certain amount of time for a new image
             if ( cam.isFrameAvailable() ) {
                 base::Time cur = base::Time::now();
-                //std::cout << ++fcnt << " fps: " << 1. / (cur-prev).toSeconds();
                 fpslist.push_back ( (cur-prev).toSeconds() );
                 prev = cur;
+                // if there is a new image get it into frame
                 cam.retrieveFrame(frame, 50);
-                //std::cout << " status: " << frame.getStatus() << std::endl;
             }
         }
 
@@ -160,9 +172,9 @@ int main(int argc, char**argv) {
         std::cout << "max fps: " << *std::max_element(fps.begin(), fps.end()) 
             << std::endl;
     }
-    
+   
+    // stop grabbing and close the camera. 
     cam.grab(camera::Stop, 0);
-
     cam.close();
 
     return 0;

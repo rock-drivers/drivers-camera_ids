@@ -6,11 +6,19 @@
  *
  */
 
+/** \page intro Introduction
+ *
+ * Drivers for cameras from <a href="http://www.ids-imaging.de">IDS-Imaging</a> based
+ * on their sdk and.
+ * A manual can be found <a href="http://www.ids-imaging.de/frontend/files/
+ * uEyeManuals/Manual_eng/uEye_Manual/index.html">here</a>.
+ */
+
 /** \page settings Settings
  *
  * - \b Pixelclock defines how often the pixels are read.
  * - \b Exposure is the time the chip is exposed to light. Value depends on
- *   pixelclock.
+ *   pixelclock and is set in ms.
  * - \b Framerate's max possible value depends on the pixelclock and exposure.
  * - \b AOI is to get a samller size of the picture (allows increased framerate)
  * - \b Binning reads only every nth pixel (allows increased framerate)
@@ -30,15 +38,15 @@
  * - Binning None, 2x, 4x
  *   - 2x, 40 MHz Pixelclock: max. 159.27 fps
  *   - 4x, 40 MHz Pixelclock: max. 271.70 fps
- *   - 4x, 60 MHz Pixelclock(max. is increased when binning): max. 407.55fps
- *
+ *   - 4x, 60 MHz Pixelclock: max. 407.55fps
  *  */
 
 /** \page test Test Program
- *
+ * 
+ * To test the driver use test_bin in the build/test folder.
+ * \code
  * ./test_bin --help
+ * \endcode
  *
- *
- *
- *
+ * Also use it to see how the driver might be used.
  */
