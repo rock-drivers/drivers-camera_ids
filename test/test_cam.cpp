@@ -9,6 +9,8 @@
 #include <opencv/cv.h>
 #include <boost/program_options.hpp>
 
+#include <frame_helper/FrameHelper.h>
+
 #include "CamIds.h"
 
 using namespace base::samples::frame;
@@ -162,7 +164,9 @@ int main(int argc, char**argv) {
                 
                 ss << " size: " << frame.size.width << " x " << frame.size.height;
                 ss << " cnt: " << frame.getAttribute<uint64_t>("FrameCount");
-                cv::Mat img = frame.convertToCvMat();
+
+                cv::Mat img = frame_helper::FrameHelper::convertToCvMat(frame);
+
                 cv::putText(img, ss.str(), cv::Point(10,20), cv::FONT_HERSHEY_SIMPLEX,
                     0.5, CV_RGB(128,255,0.0), 1, 8, false);
                 cv::imshow("frame", img);

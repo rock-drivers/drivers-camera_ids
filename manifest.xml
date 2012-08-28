@@ -11,6 +11,7 @@
   
   <depend package="base/types" />
   <depend package="drivers/camera_interface" />
+  <depend package="image_processing/frame_helper" optional="1" />
   <depend package="opencv" optional="1" />
 
   <export>
