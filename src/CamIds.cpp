@@ -90,7 +90,7 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
 
         // get information about this Ethernet camera
         UEYE_ETH_DEVICE_INFO ethDeviceInfo;
-#if API_VERSION >= 4000
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 0, 0)
         if (is_DeviceInfo(uEyeCamInfo->dwDeviceID | IS_USE_DEVICE_ID,
                 IS_DEVICE_INFO_CMD_GET_DEVICE_INFO, &ethDeviceInfo, 
                 sizeof(UEYE_ETH_DEVICE_INFO)) != IS_SUCCESS)
@@ -618,7 +618,7 @@ bool CamIds::grabStopFromContinuousMode() {
 //==============================================================================
 bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
         const base::samples::frame::frame_mode_t mode,
-        const uint8_t color_depth,
+        const uint8_t color_depth, // Bytes per Pixel
         const bool resize_frames)
 {
     // no camera
@@ -708,13 +708,25 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     case MODE_BAYER_GRBG:
     case MODE_BAYER_GBRG:
         if (dataDepth == 8) {
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 20, 0)
+            selectedMode = IS_CM_SENSOR_RAW8;
+#else
             selectedMode = IS_CM_BAYER_RG8;
+#endif
         }
         else if (dataDepth == 12) {
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 20, 0)
+            selectedMode = IS_CM_SENSOR_RAW12;
+#else
             selectedMode = IS_CM_BAYER_RG12;
+#endif
         }
         else if (dataDepth == 16) {
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 20, 0)
+            selectedMode = IS_CM_SENSOR_RAW16;
+#else
             selectedMode = IS_CM_BAYER_RG16;
+#endif
         }
         else {
             LOG_ERROR_S << "Invalid color depth and color mode for camera "
@@ -827,7 +839,7 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
     int color_mode = is_SetColorMode(*this->pCam_, IS_GET_COLOR_MODE);
 
     switch(color_mode) {
-#if API_VERSION >= 4200
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 20, 0)
         case IS_CM_SENSOR_RAW8:
         case IS_CM_SENSOR_RAW12:
         case IS_CM_SENSOR_RAW16:
@@ -1003,7 +1015,7 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             LOG_INFO("Set SaturationValue to %i",value);
             break;
         case int_attrib::PixelClock:
-#if API_VERSION >= 4000
+#if UEYE_VERSION_CODE >= UEYE_VERSION(4, 0, 0)
             if (IS_SUCCESS != is_PixelClock(*this->pCam_, IS_PIXELCLOCK_CMD_SET,
                         (void*)&value, sizeof(value))) {
 #else
