@@ -827,9 +827,15 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
     int color_mode = is_SetColorMode(*this->pCam_, IS_GET_COLOR_MODE);
 
     switch(color_mode) {
+#if API_VERSION >= 4200
+        case IS_CM_SENSOR_RAW8:
+        case IS_CM_SENSOR_RAW12:
+        case IS_CM_SENSOR_RAW16:
+#else
         case IS_CM_BAYER_RG8:
         case IS_CM_BAYER_RG12:
         case IS_CM_BAYER_RG16:
+#endif
             mode = MODE_BAYER;
             break;
         case IS_CM_MONO8:
