@@ -706,7 +706,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     case MODE_BAYER_BGGR:
     case MODE_BAYER_GRBG:
     case MODE_BAYER_GBRG:
-        LOG_ERROS_S << "Camera " << this->pCamInfo_->unique_id << " uses MODE_BAYER_RGGB.";
+        LOG_ERROR_S << "Camera " << this->pCamInfo_->unique_id << " uses MODE_BAYER_RGGB.";
         return false;
         break;
     case MODE_BAYER_RGGB:
