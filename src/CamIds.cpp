@@ -704,9 +704,12 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     switch (mode) {
     case MODE_BAYER:
     case MODE_BAYER_BGGR:
-    case MODE_BAYER_RGGB:
     case MODE_BAYER_GRBG:
     case MODE_BAYER_GBRG:
+        LOG_ERROS_S << "Camera " << this->pCamInfo_->unique_id << " uses MODE_BAYER_RGGB.";
+        return false;
+        break;
+    case MODE_BAYER_RGGB:
         if (dataDepth == 8) {
 #if UEYE_VERSION_CODE >= UEYE_VERSION(4, 20, 0)
             selectedMode = IS_CM_SENSOR_RAW8;
@@ -848,7 +851,7 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
         case IS_CM_BAYER_RG12:
         case IS_CM_BAYER_RG16:
 #endif
-            mode = MODE_BAYER;
+            mode = MODE_BAYER_RGGB;
             break;
         case IS_CM_MONO8:
         case IS_CM_MONO12:
