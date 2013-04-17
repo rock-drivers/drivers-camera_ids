@@ -1,11 +1,13 @@
 <package>
   
   <description brief="Driver for IDS cameras.">
-  Driver for IDS cameras.
+      Driver for UEye cameras from IDS-Imaging.
   </description>
   
   <author>Remus Claudiu Dumitru/r.dumitru@jacobs-university.de</author>
-  <license></license>
+  <author>Felix Rehrmann/felix.rehrmann@dfki.de</author>
+  <copyright>DFKI/robotik@dfki.de</copyright>
+  <license>LGPL v2 or later</license>
   <url>http://</url>
   <logo>http://</logo>
   
