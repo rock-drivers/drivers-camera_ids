@@ -587,6 +587,9 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
 
         frame.attributes.clear();
         frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
+        double exposure;
+        is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
+        frame.setAttribute<double>("Exposure", exposure);
 
         return true;
 }
@@ -1192,6 +1195,10 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
             throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set exposure to auto");
         }
         LOG_INFO_S << "Set exposure to auto.";
+        { double exp, dummy;
+            if ( is_SetAutoParameter(*this->pCam_, IS_GET_AUTO_SHUTTER_MAX, &exp, &dummy) == IS_SUCCESS )
+                LOG_INFO_S << "Exposure max is " << exp;
+        }
         break;
     case enum_attrib::ExposureModeToManual:
         // turn off auto
