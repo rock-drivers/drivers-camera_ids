@@ -336,6 +336,24 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
 
     return true;
 }
+void CamIds::setErrorReport(bool on) {
+
+    if (on)
+        is_SetErrorReport(*this->pCam_, IS_ENABLE_ERR_REP);
+    else
+        is_SetErrorReport(*this->pCam_, IS_DISABLE_ERR_REP);
+}
+
+int CamIds::getLastError(std::string& msg) {
+    int err_code;
+    char* err_msg;
+    if (is_GetError(*this->pCam_, &err_code, &err_msg)) {
+        msg = std::string(err_msg);
+        return err_code;
+    }
+    return 0;
+}
+
 
 bool CamIds::isOpen() const {
     if (this->pCam_ == NULL) {

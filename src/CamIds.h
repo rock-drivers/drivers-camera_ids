@@ -129,6 +129,12 @@ public:
      */
     int countCameras() const;
 
+    /**If enabled erros will be shown in an dialog box. */
+    void setErrorReport(bool on);
+
+    /** Returns the last error code. And writes the message into the string.*/
+    int getLastError(std::string& msg);
+
     /**
      * Opens a specific camera.
      * @warning opening the last camera in a list after calling listCameras() \
