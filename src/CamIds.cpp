@@ -354,6 +354,27 @@ int CamIds::getLastError(std::string& msg) {
     return 0;
 }
 
+CaptureStatus CamIds::getCaptureStatus() {
+
+    CaptureStatus cs;
+    UEYE_CAPTURE_STATUS_INFO ucsi;
+
+    is_CaptureStatus(*this->pCam_, IS_CAPTURE_STATUS_INFO_CMD_GET,
+            &ucsi, sizeof(ucsi));
+
+    cs.noDestMem = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_API_NO_DEST_MEM];
+    cs.conversionFailed = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_API_CONVERSION_FAILED];
+    cs.imageLocked = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_API_IMAGE_LOCKED];
+    cs.outOfBuffers = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_DRV_OUT_OF_BUFFERS];
+    cs.deviceNotReady = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_DRV_DEVICE_NOT_READY];
+    cs.transferFailed = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_USB_TRANSFER_FAILED];
+    cs.timeout = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_DEV_TIMEOUT];
+    cs.bufferOverrun = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_ETH_BUFFER_OVERRUN];
+    cs.missedImages = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_ETH_MISSED_IMAGES];
+
+    return cs;
+}
+
 
 bool CamIds::isOpen() const {
     if (this->pCam_ == NULL) {

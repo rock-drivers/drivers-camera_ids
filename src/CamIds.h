@@ -13,8 +13,8 @@
 #include <camera_interface/CamInfoUtils.h>                 
 
 #include <base/samples/frame.h>
-
 #include <ueye.h>                           // API for the IDS cameras
+#include "CamTypes.h"
 
 // a single ueye frame
 typedef struct _UEYE_IMAGE {
@@ -134,6 +134,9 @@ public:
 
     /** Returns the last error code. And writes the message into the string.*/
     int getLastError(std::string& msg);
+
+    /** Aquires the capture status and returns it. */
+    CaptureStatus getCaptureStatus();
 
     /**
      * Opens a specific camera.
