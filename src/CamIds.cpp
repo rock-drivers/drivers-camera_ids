@@ -613,10 +613,8 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
 
         frame.setImage(plast, frame.row_size * frame.size.height);
 
-        is_UnlockSeqBuf(*this->pCam_, inum, plast);
-        
         frame.setStatus(STATUS_VALID);
-        
+
         //generate base::Time object with givend camera device time synchronised to system time.
         frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay, 
                                                imgInfo.TimestampSystem.wHour, imgInfo.TimestampSystem.wMinute, imgInfo.TimestampSystem.wSecond,
@@ -629,6 +627,8 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         double exposure;
         is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
         frame.setAttribute<double>("Exposure", exposure);
+
+        is_UnlockSeqBuf(*this->pCam_, inum, plast);
 
         return true;
 }
