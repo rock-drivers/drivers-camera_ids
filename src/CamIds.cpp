@@ -6,6 +6,7 @@
  */
 
 #include "CamIds.h"
+#include <base/time.h>
 #include <iostream>
 #include <boost/current_function.hpp>
 #include <base/logging.h>
@@ -587,6 +588,8 @@ bool CamIds::grabContinuousMode(const int buffer_len) {
     // start capturing video
     is_CaptureVideo(*this->pCam_, IS_DONT_WAIT); //TODO play around with wait values
 
+    mLastFrameCount = 0;
+
     return true;
 }
 
@@ -594,6 +597,8 @@ bool CamIds::grabContinuousMode(const int buffer_len) {
 /** Retireve a frame in the continous mode */
 bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame, 
         const int timeout) {
+
+        static base::Time tnow = base::Time::now();
 
         INT dummy;
         char *plast = NULL, *pdummy = NULL;
@@ -621,9 +626,20 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
                                                imgInfo.TimestampSystem.wMilliseconds, 0);
 
         frame.received_time = base::Time::now();
+        double dt = (frame.received_time - tnow).toSeconds();
+        tnow = frame.received_time;
 
         frame.attributes.clear();
+
         frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
+        int frame_diff = imgInfo.u64FrameNumber - mLastFrameCount;
+        if ( frame_diff > 1 ) {
+            LOG_WARN("lost frame(s): %3d; dt = %7.5f", imgInfo.u64FrameNumber - mLastFrameCount - 1, dt);
+        } else if ( frame_diff < 1 )
+            LOG_WARN_S << "frame increment is less than 1 - that should not happen: " <<
+                imgInfo.u64FrameNumber << " - " << mLastFrameCount;
+        mLastFrameCount = imgInfo.u64FrameNumber;
+
         double exposure;
         is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
         frame.setAttribute<double>("Exposure", exposure);

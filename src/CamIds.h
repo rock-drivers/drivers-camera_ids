@@ -59,6 +59,8 @@ private:
 
     int mEventTimeout;
 
+    unsigned long mLastFrameCount;
+
     /**
      * Retrieves camera information for a single camera.
      * @warning camera must be initialized when this method is used
