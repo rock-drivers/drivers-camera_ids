@@ -372,6 +372,7 @@ CaptureStatus CamIds::getCaptureStatus() {
     cs.timeout = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_DEV_TIMEOUT];
     cs.bufferOverrun = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_ETH_BUFFER_OVERRUN];
     cs.missedImages = ucsi.adwCapStatusCnt_Detail[IS_CAP_STATUS_ETH_MISSED_IMAGES];
+    cs.totalCount = ucsi.dwCapStatusCnt_Total;
 
     return cs;
 }

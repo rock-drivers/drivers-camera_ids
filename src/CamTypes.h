@@ -15,6 +15,7 @@ struct CaptureStatus {
     unsigned int timeout;
     unsigned int bufferOverrun;
     unsigned int missedImages;
+    unsigned int totalCount;
 
     CaptureStatus () {
         noDestMem=0;
@@ -26,6 +27,7 @@ struct CaptureStatus {
         timeout=0;
         bufferOverrun=0;
         missedImages=0;
+        totalCount;
     }
 };
 
