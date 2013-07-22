@@ -606,15 +606,15 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         UEYEIMAGEINFO imgInfo;
 
         is_GetActSeqBuf ( *this->pCam_, &dummy, &pdummy, &plast );
+        const UEYE_IMAGE& u_img = getFrameBuf(plast);
+        inum = u_img.nImageSeqNum;
+        iid  = u_img.nImageID;
         is_LockSeqBuf ( *pCam_, inum, plast );
-
-        inum = getFrameBuf(plast).nImageSeqNum;
-        iid  = getFrameBuf(plast).nImageID;
-
         is_GetImageInfo(*this->pCam_, iid, &imgInfo, sizeof(imgInfo));
 
         frame.init( (uint16_t)imgInfo.dwImageWidth, (uint16_t)imgInfo.dwImageHeight, 
                 image_color_depth_, image_mode_ );
+
 
         frame.setImage(plast, frame.row_size * frame.size.height);
 
