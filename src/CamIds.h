@@ -61,6 +61,9 @@ private:
 
     unsigned long mLastFrameCount;
 
+    /** To Switch between the to continuous retrieve modes. */
+    bool mGetEveryFrame;
+
     /**
      * Retrieves camera information for a single camera.
      * @warning camera must be initialized when this method is used
@@ -79,6 +82,9 @@ protected:
     bool grabContinuousMode( const int buffer_len = 1);
     bool retrieveFrameContinuousMode( base::samples::frame::Frame& frame, 
             const int timeout );
+    bool waitForNextImage(int timeout, char** ppcMem, int* p_img_id);
+    bool retrieveOldestNewFrameContinuousMode(base::samples::frame::Frame& frame,
+            const int timeout);
     bool isFrameAvailableContinuousMode();
     bool grabStopFromContinuousMode();
 
@@ -136,6 +142,13 @@ public:
 
     /** Returns the last error code. And writes the message into the string.*/
     int getLastError(std::string& msg);
+
+    /** Allows two switch between two modes to retrieve frames in continuous mode.
+     *
+     * @param on_off set to true means all images are captured. Set to false
+     * means the driver will always get the lastest ones, which could lead to
+     * lost frames. */
+    void setGetEveryFrame(bool on_off) { mGetEveryFrame = on_off; }
 
     /** Aquires the capture status and returns it. */
     CaptureStatus getCaptureStatus();

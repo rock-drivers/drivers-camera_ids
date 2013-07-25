@@ -22,6 +22,7 @@ CamIds::CamIds() {
     this->nFrameBufLen_  = 0;
     this->nSeqCount_     = 0;
     this->mEventTimeout = 10;
+    this->mGetEveryFrame = false;
 }
 
 CamIds::CamIds(const CamIds& other) {
@@ -31,6 +32,7 @@ CamIds::CamIds(const CamIds& other) {
     this->nFrameBufLen_  = other.nFrameBufLen_;
     this->nSeqCount_     = other.nSeqCount_;
     this->mEventTimeout = 10;
+    this->mGetEveryFrame = false;
 }
 
 CamIds::~CamIds() {
@@ -473,7 +475,10 @@ bool CamIds::isFrameAvailable() {
 
     switch (act_grab_mode_) {
     case Continuously:
-        return isFrameAvailableContinuousMode();
+        if (mGetEveryFrame)
+            return true;
+        else
+            return isFrameAvailableContinuousMode();
     default:
         return false;
     }
@@ -495,7 +500,10 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
         throw std::runtime_error("MultiFrame not supported yet!");
         break;
     case Continuously:
-        return retrieveFrameContinuousMode(frame, timeout);
+        if (mGetEveryFrame)
+            return retrieveOldestNewFrameContinuousMode(frame, timeout);
+        else
+            return retrieveFrameContinuousMode(frame, timeout);
         break;
     default:
         throw std::runtime_error("Grab mode not supported by camera!");
@@ -595,8 +603,10 @@ bool CamIds::grabContinuousMode(const int buffer_len) {
 }
 
 
-/** Retireve a frame in the continous mode */
-bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame, 
+/** Retrieve a frame in the continous mode.
+ *
+ * This one gets the latest captured frame, so it will not */
+bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         const int timeout) {
 
         static base::Time tnow = base::Time::now();
@@ -649,6 +659,116 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
 
         return true;
 }
+
+/** A wrapper for is_WatiForNextImage to get all the messages out. */
+bool CamIds::waitForNextImage(int timeout, char** ppcMem, int* p_img_id) {
+
+    INT result = is_WaitForNextImage(*this->pCam_, timeout, ppcMem, p_img_id);
+    if (result != IS_SUCCESS) {
+        switch(result) {
+            case IS_CANT_COMMUNICATE_WITH_DRIVER:
+                LOG_ERROR_S << "Communication with the driver failed because no "
+                    << "driver has been loaded.";
+                break;
+            case IS_CANT_OPEN_DEVICE:
+                LOG_ERROR_S << "An attempt to initialize or select the camera "
+                    << "failed (no camera connected or initialization error).";
+                break;
+            case IS_INVALID_CAMERA_HANDLE:
+                LOG_ERROR_S << "Invalid camera handle.";
+                break;
+            case IS_INVALID_MEMORY_POINTER:
+                LOG_ERROR_S << "Invalid pointer or invalid memory ID.";
+                break;
+            case IS_INVALID_PARAMETER:
+                LOG_ERROR_S << "One of the submitted parameters is outside the "
+                    << "valid range or is not supported for this sensor or is "
+                    << "not available in this mode.";
+                break;
+            case IS_IO_REQUEST_FAILED:
+                LOG_ERROR_S << "An IO request from the uEye driver failed. "
+                    << "Possibly the versions of the ueye_api.dll (API) and the "
+                    << "driver file (ueye_usb.sys or ueye_eth.sys) do not match.";
+                break;
+            case IS_NO_SUCCESS:
+                LOG_ERROR_S << "General error.";
+                break;
+            case IS_TIMED_OUT:
+                LOG_ERROR_S << "A timeout occurred. An image capturing process "
+                    << "could not be terminated within the allowable period.";
+                break;
+            // hast the same value as another macro.
+            //case IS_CAPTURE_STATUS:
+            //    LOG_ERROR_S << "A transfer error occurred or no image memory was "
+            //        << "available for saving.";
+            //    break;
+            default:
+                LOG_ERROR_S << "Unknown error.";
+        }
+        return false;
+    }
+    return true;
+}
+
+/** Retireve a frame in the continous mode.
+ *
+ * This one gets the oldest not retrieved Frame. Furthermore it uses
+ * an eventless apprach.*/
+bool CamIds::retrieveOldestNewFrameContinuousMode( base::samples::frame::Frame& frame,
+        const int timeout) {
+
+    static base::Time tnow = base::Time::now();
+
+    char* pcMem;
+    INT img_id;
+
+    if (!waitForNextImage(timeout, &pcMem, &img_id)) return false;
+
+    UEYEIMAGEINFO imgInfo;
+    is_GetImageInfo(*this->pCam_, img_id, &imgInfo, sizeof(imgInfo));
+
+    frame.init( (uint16_t)imgInfo.dwImageWidth, (uint16_t)imgInfo.dwImageHeight,
+            image_color_depth_, image_mode_ );
+
+
+    frame.setImage(pcMem, frame.row_size * frame.size.height);
+
+    frame.setStatus(STATUS_VALID);
+
+    //generate base::Time object with givend camera device time synchronised to system time.
+    frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear,
+                                            imgInfo.TimestampSystem.wMonth,
+                                            imgInfo.TimestampSystem.wDay,
+                                            imgInfo.TimestampSystem.wHour,
+                                            imgInfo.TimestampSystem.wMinute,
+                                            imgInfo.TimestampSystem.wSecond,
+                                            imgInfo.TimestampSystem.wMilliseconds,
+                                            0);
+
+    frame.received_time = base::Time::now();
+    double dt = (frame.received_time - tnow).toSeconds();
+    tnow = frame.received_time;
+
+    frame.attributes.clear();
+
+    frame.setAttribute<uint64_t>("FrameCount", imgInfo.u64FrameNumber);
+    int frame_diff = imgInfo.u64FrameNumber - mLastFrameCount;
+    if ( frame_diff > 1 ) {
+        LOG_WARN("lost frame(s): %3d; dt = %7.5f", imgInfo.u64FrameNumber - mLastFrameCount - 1, dt);
+    } else if ( frame_diff < 1 )
+        LOG_WARN_S << "frame increment is less than 1 - that should not happen: " <<
+            imgInfo.u64FrameNumber << " - " << mLastFrameCount;
+    mLastFrameCount = imgInfo.u64FrameNumber;
+
+    double exposure;
+    is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
+    frame.setAttribute<double>("Exposure", exposure);
+
+    is_UnlockSeqBuf(*this->pCam_, IS_IGNORE_PARAMETER, pcMem);
+
+    return true;
+}
+
 
 /** Checks weather a frame is available in continous mode */
 bool CamIds::isFrameAvailableContinuousMode () {
