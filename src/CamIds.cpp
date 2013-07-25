@@ -43,7 +43,7 @@ CamIds::~CamIds() {
 
     if (this->pCamInfo_ != NULL)
         delete this->pCamInfo_;
-    
+
     if (this->pCam_ != NULL) {
         is_ExitCamera(*this->pCam_);
         delete this->pCam_;
@@ -95,7 +95,7 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
         UEYE_ETH_DEVICE_INFO ethDeviceInfo;
 #if UEYE_VERSION_CODE >= UEYE_VERSION(4, 0, 0)
         if (is_DeviceInfo(uEyeCamInfo->dwDeviceID | IS_USE_DEVICE_ID,
-                IS_DEVICE_INFO_CMD_GET_DEVICE_INFO, &ethDeviceInfo, 
+                IS_DEVICE_INFO_CMD_GET_DEVICE_INFO, &ethDeviceInfo,
                 sizeof(UEYE_ETH_DEVICE_INFO)) != IS_SUCCESS)
 #else
         if (is_GetEthDeviceInfo(uEyeCamInfo->dwDeviceID | IS_USE_DEVICE_ID,
@@ -199,7 +199,7 @@ CamInfo CamIds::fillCamInfo(UEYE_CAMERA_INFO *uEyeCamInfo, HIDS *camHandle) cons
 
 //==============================================================================
 int CamIds::listCameras(std::vector<CamInfo> &cam_infos) const {
-    
+
     INT numCam = countCameras();
 
     if (numCam <= 0) {
@@ -260,12 +260,12 @@ std::string CamIds::doDiagnose() {
 
     std::stringstream strstr;
 
-    // show CamInfo of the open camera 
+    // show CamInfo of the open camera
     const CamInfo *pcam_info;
     try
     {
         pcam_info = getCameraInfo();
-        strstr << "Opened Camera:\n"; 
+        strstr << "Opened Camera:\n";
         strstr << "Unique Id: " << pcam_info->unique_id << "\n";
     }
     catch(std::runtime_error e)
@@ -312,7 +312,7 @@ bool CamIds::open(const CamInfo& cam, const AccessMode mode) {
     HWND hWnd;
 
     if (is_InitCamera(pCam_, &hWnd) != IS_SUCCESS) {
-        LOG_ERROR_S << "Could not open camera " << cam.unique_id << " (" << 
+        LOG_ERROR_S << "Could not open camera " << cam.unique_id << " (" <<
             cam.display_name << ")";
         this->close();
         return false;
@@ -422,7 +422,7 @@ bool CamIds::close() {
 }
 
 bool CamIds::grab(const GrabMode mode, const int buffer_len) {
-    
+
     if (this->isOpen() == false) {
         LOG_ERROR_S << "Cannot grab, camera is not open!";
         return false;
@@ -438,7 +438,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
             return true;
         }
     }
-    
+
     bool ret = true;
 
     switch(mode) {
@@ -458,7 +458,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
         break;
     case Continuously:
         LOG_INFO_S << "Set grab mode to Continuously";
-        ret = grabContinuousMode ( buffer_len ); 
+        ret = grabContinuousMode ( buffer_len );
         break;
     default:
         throw std::runtime_error("Grab mode not supported by camera!");
@@ -466,7 +466,7 @@ bool CamIds::grab(const GrabMode mode, const int buffer_len) {
 
     if ( ret ) {
         this->act_grab_mode_ = mode;
-        return true; 
+        return true;
     } else
         return false;
 }
@@ -513,11 +513,11 @@ bool CamIds::retrieveFrame(base::samples::frame::Frame& frame, const int timeout
 
 const UEYE_IMAGE& CamIds::getFrameBuf ( char* pbuffer ) {
 
-    if ( !pbuffer ) 
+    if ( !pbuffer )
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": zero pointer given");
-    
-    if ( !pFrameBuf_ ) 
+
+    if ( !pFrameBuf_ )
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": no frame buffers");
 
@@ -528,9 +528,9 @@ const UEYE_IMAGE& CamIds::getFrameBuf ( char* pbuffer ) {
             ": invalid image pointer");
 }
 
-bool CamIds::allocBuffers( int buffer_cnt ) { 
+bool CamIds::allocBuffers( int buffer_cnt ) {
     INT retVal;
-   
+
     if ( pFrameBuf_ ) {
         LOG_ERROR_S << "There is already some buffer thing.";
         return false;
@@ -543,10 +543,10 @@ bool CamIds::allocBuffers( int buffer_cnt ) {
 
         retVal = is_AllocImageMem(
                 *this->pCam_,
-                this->image_size_.width, 
+                this->image_size_.width,
                 this->image_size_.height,
                 this->image_color_depth_ * 8,
-                &this->pFrameBuf_[i].pBuf, 
+                &this->pFrameBuf_[i].pBuf,
                 &this->pFrameBuf_[i].nImageID );
 
         if (retVal != IS_SUCCESS) {
@@ -558,7 +558,7 @@ bool CamIds::allocBuffers( int buffer_cnt ) {
         }
 
         this->pFrameBuf_[i].nImageSeqNum = i+1;
-        this->pFrameBuf_[i].nBufferSize = this->image_size_.width * 
+        this->pFrameBuf_[i].nBufferSize = this->image_size_.width *
             this->image_size_.height * this->image_color_depth_;
 
         is_AddToSequence(*this->pCam_,
@@ -568,9 +568,9 @@ bool CamIds::allocBuffers( int buffer_cnt ) {
 }
 
 void CamIds::clearBuffers() {
-    
+
     if (pFrameBuf_) {
-        
+
         for ( int i=0; i<nFrameBufLen_; i++ ) {
             is_FreeImageMem(*pCam_, pFrameBuf_[i].pBuf, pFrameBuf_[i].nImageID);
             pFrameBuf_[i].pBuf = 0;
@@ -584,7 +584,7 @@ void CamIds::clearBuffers() {
 
 /** Grab for the continous mode*/
 bool CamIds::grabContinuousMode(const int buffer_len) {
-       
+
     clearBuffers();
 
     if (!allocBuffers(buffer_len)) return false;
@@ -623,7 +623,7 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         is_LockSeqBuf ( *pCam_, inum, plast );
         is_GetImageInfo(*this->pCam_, iid, &imgInfo, sizeof(imgInfo));
 
-        frame.init( (uint16_t)imgInfo.dwImageWidth, (uint16_t)imgInfo.dwImageHeight, 
+        frame.init( (uint16_t)imgInfo.dwImageWidth, (uint16_t)imgInfo.dwImageHeight,
                 image_color_depth_, image_mode_ );
 
 
@@ -632,7 +632,7 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         frame.setStatus(STATUS_VALID);
 
         //generate base::Time object with givend camera device time synchronised to system time.
-        frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay, 
+        frame.time = base::Time::fromTimeValues(imgInfo.TimestampSystem.wYear, imgInfo.TimestampSystem.wMonth, imgInfo.TimestampSystem.wDay,
                                                imgInfo.TimestampSystem.wHour, imgInfo.TimestampSystem.wMinute, imgInfo.TimestampSystem.wSecond,
                                                imgInfo.TimestampSystem.wMilliseconds, 0);
 
@@ -839,7 +839,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
             << " Returned " << ret;
         throw std::runtime_error(ss.str());
     }
-    LOG_INFO("Current AOI is w=%4d h=%4d x=%4d y=%4d", rectAOI.s32Width, 
+    LOG_INFO("Current AOI is w=%4d h=%4d x=%4d y=%4d", rectAOI.s32Width,
             rectAOI.s32Height, rectAOI.s32X, rectAOI.s32Y);
 
     // set new AOI values
@@ -849,7 +849,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     LOG_INFO("Set AOI with w=%4d h=%4d x=%4d y=%4d", size.width, size.height, rectAOI.s32X,
             rectAOI.s32Y);
     // set the area of interest of the camera
-    ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI, 
+    ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, (void*)&rectAOI,
             sizeof(rectAOI));
 
     if (ret != IS_SUCCESS) {
@@ -857,7 +857,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
         ss << std::string(BOOST_CURRENT_FUNCTION) << ": unable to set AOI."
             << " Returned " << ret;
         IS_SIZE_2D iss;
-        if ( is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_SIZE_INC, (void*)&iss, 
+        if ( is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_SIZE_INC, (void*)&iss,
                     sizeof(iss)) == IS_SUCCESS ) {
             ss << ". Sizeincr. is " << iss.s32Width << "/" << iss.s32Height;
         }
@@ -878,7 +878,7 @@ bool CamIds::setFrameSettings(const base::samples::frame::frame_size_t size,
     int dataDepth = (color_depth * 8) / channelCount;
 
     // start from something
-    INT selectedMode; 
+    INT selectedMode;
 
     switch (mode) {
     case MODE_BAYER:
@@ -1017,7 +1017,7 @@ bool CamIds::getFrameSettings(base::samples::frame::frame_size_t& size,
     size.height = rectAOI.s32Height;
     size = this->image_size_;
     color_depth = this->image_color_depth_;
-    
+
     int color_mode = is_SetColorMode(*this->pCam_, IS_GET_COLOR_MODE);
 
     switch(color_mode) {
@@ -1068,7 +1068,7 @@ INT CamIds::BinningXFactorToMode(int factor) {
     case 8: return IS_BINNING_8X_HORIZONTAL;
     case 16: return IS_BINNING_16X_HORIZONTAL;
     default:
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": unsupported BinningX factor");
     }
 }
@@ -1084,7 +1084,7 @@ INT CamIds::BinningYFactorToMode(int factor) {
     case 8: return IS_BINNING_8X_VERTICAL;
     case 16: return IS_BINNING_16X_VERTICAL;
     default:
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": unsupported BinningY factor");
     }
 }
@@ -1093,25 +1093,25 @@ void CamIds::setBinningX(int factor) {
 
     INT mode = BinningXFactorToMode(factor);
     this->image_size_.width /= factor;
-    
+
     int factor_y = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_VERTICAL);
     mode |= BinningYFactorToMode(factor_y);
 
     if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": BinningX factor not supported by camera");
 }
 
 void CamIds::setBinningY( int factor ) {
-    
+
     INT mode = BinningYFactorToMode(factor);
     this->image_size_.height /= factor;
-    
+
     int factor_x = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
     mode |= BinningXFactorToMode(factor_x);
 
     if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
-        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": BinningY factor not supported by camera");
 }
 
@@ -1143,9 +1143,9 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     switch (attrib) {
         case int_attrib::ExposureValue:
             temp = ((double) value)/1000.;
-            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, 
+            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE,
                         (void*) &temp, sizeof(temp))) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + 
+                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                         ": unable to set exposure");
             }
             break;
@@ -1215,19 +1215,19 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             break;
         // X-Offset
         case int_attrib::RegionX:
-            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI, 
+            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI,
                     sizeof(rectAOI));
 
             if ( ret == IS_SUCCESS ) {
                 rectAOI.s32X = value;
                 UINT nAbsPos;
-                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_X_ABS, (void*)&nAbsPos, 
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_X_ABS, (void*)&nAbsPos,
                         sizeof(nAbsPos));
 
                 if ( ret == IS_SUCCESS && nAbsPos == IS_AOI_IMAGE_POS_ABSOLUTE )
                     rectAOI.s32X |= IS_AOI_IMAGE_POS_ABSOLUTE;
-            
-                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, 
+
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI,
                     (void*)&rectAOI, sizeof(rectAOI));
 
                 if ( ret != IS_SUCCESS) {
@@ -1242,19 +1242,19 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             break;
         // Y-Offset
         case int_attrib::RegionY:
-            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI, 
+            ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_AOI, (void*)&rectAOI,
                     sizeof(rectAOI));
 
             if ( ret == IS_SUCCESS ) {
                 rectAOI.s32Y = value;
                 UINT nAbsPos;
-                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_Y_ABS, (void*)&nAbsPos, 
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_GET_POS_Y_ABS, (void*)&nAbsPos,
                         sizeof(nAbsPos));
 
                 if ( ret == IS_SUCCESS && nAbsPos == IS_AOI_IMAGE_POS_ABSOLUTE )
                     rectAOI.s32Y |= IS_AOI_IMAGE_POS_ABSOLUTE;
-            
-                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI, 
+
+                ret = is_AOI(*this->pCam_, IS_AOI_IMAGE_SET_AOI,
                     (void*)&rectAOI, sizeof(rectAOI));
 
                 if ( ret != IS_SUCCESS) {
