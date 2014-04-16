@@ -1124,9 +1124,13 @@ void CamIds::setBinningX(int factor) {
     int factor_y = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_VERTICAL);
     mode |= BinningYFactorToMode(factor_y);
 
-    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
+    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": BinningX factor not supported by camera");
+    }
+    else {
+        LOG_INFO_S<<"Set horizontal binning to "<<factor;
+    }
 }
 
 void CamIds::setBinningY( int factor ) {
@@ -1137,9 +1141,14 @@ void CamIds::setBinningY( int factor ) {
     int factor_x = is_SetBinning(*this->pCam_, IS_GET_BINNING_FACTOR_HORIZONTAL);
     mode |= BinningXFactorToMode(factor_x);
 
-    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode))
+    if (IS_SUCCESS != is_SetBinning(*this->pCam_, mode)) {
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": BinningY factor not supported by camera");
+    }
+    else {
+        LOG_INFO_S<<"Set vertical binning to "<<factor;
+    }
+
 }
 
 
