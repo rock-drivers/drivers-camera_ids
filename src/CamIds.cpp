@@ -1169,11 +1169,28 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
 
     switch (attrib) {
         case int_attrib::ExposureValue:
-            temp = ((double) value)/1000.;
-            if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE,
-                        (void*) &temp, sizeof(temp))) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
-                        ": unable to set exposure");
+            {
+                // get the state of auto exposure
+                double isAutoExp = 0;
+                is_SetAutoParameter(*(this->pCam_), IS_GET_ENABLE_AUTO_SHUTTER, &isAutoExp, NULL);
+
+                // set exposure time only if auto exposure is turned off
+                if(!isAutoExp) {
+                    // convert exposure time from SI unit microseconds to milliseconds
+                    temp = (double) value / 1000.0;
+                    // set exposure time in ms
+                    if (IS_SUCCESS != is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE,
+                                (void*) &temp, sizeof(temp))) {
+                        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
+                                ": unable to set exposure");
+                    }
+                    else {
+                        LOG_INFO_S<<"Set exposure time to "<<temp<<" ms (target: "<<value<<" us)";
+                    }
+                }
+                else {
+                    LOG_WARN_S<<"Auto exposure enabled. Ignoring exposure time "<<(double)value<<" ms";
+                }
             }
             break;
         case int_attrib::ExposureAutoMax:
