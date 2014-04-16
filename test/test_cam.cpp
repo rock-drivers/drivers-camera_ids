@@ -121,17 +121,14 @@ int main(int argc, char**argv) {
 
     base::samples::frame::Frame frame;
     base::Time prev = base::Time::now();
-    int nrFrames = 1000, count = 0;
 
     //cv::namedWindow("frame", CV_WINDOW_AUTOSIZE);
 
     std::cout << "Ctrl-C for exit!" << std::endl;
-    //for (int i = 0; i < nrFrames; ++i) {
     
     if ( vm.count("blind") ) {
         // blind capture
         std::cout << "get for 10 s" << std::endl;
-        int fcnt;
         base::Time start = base::Time::now();
         std::vector<double> fpslist;
         while ( (base::Time::now()-start).toSeconds() < 10.0 ) {

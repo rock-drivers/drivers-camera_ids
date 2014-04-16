@@ -521,7 +521,7 @@ const UEYE_IMAGE& CamIds::getFrameBuf ( char* pbuffer ) {
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
                 ": no frame buffers");
 
-    for ( int i=0; i < nFrameBufLen_; i++ )
+    for ( unsigned int i=0; i < nFrameBufLen_; i++ )
         if ( pFrameBuf_[i].pBuf == pbuffer ) return pFrameBuf_[i];
 
     throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) +
@@ -571,7 +571,7 @@ void CamIds::clearBuffers() {
 
     if (pFrameBuf_) {
 
-        for ( int i=0; i<nFrameBufLen_; i++ ) {
+        for ( unsigned int i=0; i<nFrameBufLen_; i++ ) {
             is_FreeImageMem(*pCam_, pFrameBuf_[i].pBuf, pFrameBuf_[i].nImageID);
             pFrameBuf_[i].pBuf = 0;
         }
@@ -646,9 +646,11 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         int frame_diff = imgInfo.u64FrameNumber - mLastFrameCount;
         if ( frame_diff > 1 ) {
             LOG_WARN("lost frame(s): %3d; dt = %7.5f", imgInfo.u64FrameNumber - mLastFrameCount - 1, dt);
-        } else if ( frame_diff < 1 )
+        }
+        else if ( frame_diff < 1 ) {
             LOG_WARN_S << "frame increment is less than 1 - that should not happen: " <<
                 imgInfo.u64FrameNumber << " - " << mLastFrameCount;
+        }
         mLastFrameCount = imgInfo.u64FrameNumber;
 
         setFrameAttrExposure(frame);
@@ -781,9 +783,11 @@ bool CamIds::retrieveOldestNewFrameContinuousMode( base::samples::frame::Frame& 
     int frame_diff = imgInfo.u64FrameNumber - mLastFrameCount;
     if ( frame_diff > 1 ) {
         LOG_WARN("lost frame(s): %3d; dt = %7.5f", imgInfo.u64FrameNumber - mLastFrameCount - 1, dt);
-    } else if ( frame_diff < 1 )
+    }
+    else if ( frame_diff < 1 ) {
         LOG_WARN_S << "frame increment is less than 1 - that should not happen: " <<
             imgInfo.u64FrameNumber << " - " << mLastFrameCount;
+    }
     mLastFrameCount = imgInfo.u64FrameNumber;
 
     setFrameAttrExposure(frame);
@@ -819,6 +823,8 @@ bool CamIds::grabStopFromContinuousMode() {
         clearBuffers();
         is_DisableEvent(*this->pCam_, IS_SET_EVENT_FRAME);
         is_ExitImageQueue(*this->pCam_);
+
+        return true;
 }
 
 //==============================================================================
@@ -1163,9 +1169,6 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     double temp;
     double red, blue;
 
-    // used to retrieve camera sensor info
-    SENSORINFO sensorInfo;
-
     // used to set area of interest for camera sensor
     IS_RECT rectAOI;
 
@@ -1416,8 +1419,9 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
         }
         LOG_INFO_S << "Set exposure to auto.";
         { double exp, dummy;
-            if ( is_SetAutoParameter(*this->pCam_, IS_GET_AUTO_SHUTTER_MAX, &exp, &dummy) == IS_SUCCESS )
+            if ( is_SetAutoParameter(*this->pCam_, IS_GET_AUTO_SHUTTER_MAX, &exp, &dummy) == IS_SUCCESS ) {
                 LOG_INFO_S << "Exposure max is " << exp;
+            }
         }
         break;
     case enum_attrib::ExposureModeToManual:

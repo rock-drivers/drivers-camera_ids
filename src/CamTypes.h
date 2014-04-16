@@ -27,7 +27,6 @@ struct CaptureStatus {
         timeout=0;
         bufferOverrun=0;
         missedImages=0;
-        totalCount;
     }
 };
 
