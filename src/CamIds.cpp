@@ -655,9 +655,24 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
         frame.setAttribute<double>("Exposure", exposure);
 
+        setFrameAttrPixelClock(frame);
+
         is_UnlockSeqBuf(*this->pCam_, inum, plast);
 
         return true;
+}
+
+bool CamIds::setFrameAttrPixelClock(base::samples::frame::Frame &frame) {
+    // get pixel clock frequency in MHz
+    unsigned int pixel_clock = 0;
+    if( is_PixelClock(*(this->pCam_), IS_PIXELCLOCK_CMD_GET, &pixel_clock, sizeof(pixel_clock)) == IS_SUCCESS ) {
+        frame.setAttribute<int>("PixelClock_MHz", pixel_clock);
+        return true;
+    }
+    else {
+        LOG_WARN_S<<"could not access the current pixel clock value";
+        return false;
+    }
 }
 
 /** A wrapper for is_WatiForNextImage to get all the messages out. */
@@ -763,6 +778,9 @@ bool CamIds::retrieveOldestNewFrameContinuousMode( base::samples::frame::Frame& 
     double exposure;
     is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
     frame.setAttribute<double>("Exposure", exposure);
+
+    setFrameAttrPixelClock(frame);
+
 
     is_UnlockSeqBuf(*this->pCam_, IS_IGNORE_PARAMETER, pcMem);
 

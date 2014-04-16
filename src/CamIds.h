@@ -82,6 +82,7 @@ protected:
     bool grabContinuousMode( const int buffer_len = 1);
     bool retrieveFrameContinuousMode( base::samples::frame::Frame& frame, 
             const int timeout );
+    bool setFrameAttrPixelClock(base::samples::frame::Frame &frame);
     bool waitForNextImage(int timeout, char** ppcMem, int* p_img_id);
     bool retrieveOldestNewFrameContinuousMode(base::samples::frame::Frame& frame,
             const int timeout);
