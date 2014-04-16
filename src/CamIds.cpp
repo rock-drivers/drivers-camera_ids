@@ -1160,11 +1160,6 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
     // used to set area of interest for camera sensor
     IS_RECT rectAOI;
 
-    double lfps, lnfps;
-    is_SetFrameRate(*this->pCam_, IS_GET_FRAMERATE, &lfps);
-    double lexp;
-    is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &lexp, sizeof(lexp));
-
     int ret; // to get return value
 
     switch (attrib) {
@@ -1280,8 +1275,6 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                         << " Returned " << ret;
                     throw std::runtime_error(ss.str());
                 }
-                is_SetFrameRate(*this->pCam_, lfps, &lnfps);
-                is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             }
             break;
         // Y-Offset
@@ -1307,8 +1300,6 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
                         << " Returned " << ret;
                     throw std::runtime_error(ss.str());
                 }
-                is_SetFrameRate(*this->pCam_, lfps, &lnfps);
-                is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_SET_EXPOSURE, &lexp, sizeof(lexp));
             }
             break;
         default:
