@@ -651,9 +651,7 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
                 imgInfo.u64FrameNumber << " - " << mLastFrameCount;
         mLastFrameCount = imgInfo.u64FrameNumber;
 
-        double exposure;
-        is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
-        frame.setAttribute<double>("Exposure", exposure);
+        setFrameAttrExposure(frame);
 
         setFrameAttrPixelClock(frame);
 
@@ -671,6 +669,19 @@ bool CamIds::setFrameAttrPixelClock(base::samples::frame::Frame &frame) {
     }
     else {
         LOG_WARN_S<<"could not access the current pixel clock value";
+        return false;
+    }
+}
+
+bool CamIds::setFrameAttrExposure(base::samples::frame::Frame &frame) {
+    double exposure = 0;
+    // get the current exposure time in ms
+    if( is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure)) == IS_SUCCESS ) {
+        frame.setAttribute<double>("Exposure_ms", exposure);
+        return true;
+    }
+    else {
+        LOG_WARN_S<<"could not access the current exposure time";
         return false;
     }
 }
@@ -775,9 +786,7 @@ bool CamIds::retrieveOldestNewFrameContinuousMode( base::samples::frame::Frame& 
             imgInfo.u64FrameNumber << " - " << mLastFrameCount;
     mLastFrameCount = imgInfo.u64FrameNumber;
 
-    double exposure;
-    is_Exposure(*this->pCam_, IS_EXPOSURE_CMD_GET_EXPOSURE, &exposure, sizeof(exposure));
-    frame.setAttribute<double>("Exposure", exposure);
+    setFrameAttrExposure(frame);
 
     setFrameAttrPixelClock(frame);
 
