@@ -252,6 +252,13 @@ public:
     bool setAttrib(const enum_attrib::CamAttrib attrib);
 
     /**
+     * Enables / disables the analog hardware gain boost
+     * @param boost flag to enable gain boost (on by default)
+     * @return true if gain boost was successfully set
+     */
+    bool setGainBoost(const bool boost=true);
+
+    /**
      * Checks if an integer attribute is available.
      */
     bool isAttribAvail(const int_attrib::CamAttrib attrib);

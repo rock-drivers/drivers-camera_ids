@@ -1442,6 +1442,27 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
     return true;
 }
 
+bool CamIds::setGainBoost(const bool boost) {
+    if(!this->pCam_) {
+        return false;
+    }
+
+    if(boost && (is_SetGainBoost(*(this->pCam_), IS_GET_SUPPORTED_GAINBOOST) != IS_SET_GAINBOOST_ON) ) {
+        // unsupported
+        LOG_WARN_S<<"Gain boost not supported!";
+        return false;
+    }
+
+    // IS_SET_GAINBOOST_ON   0x0001
+    // IS_SET_GAINBOOST_OFF  0x0000
+    if(is_SetGainBoost(*(this->pCam_), boost) != IS_SUCCESS) {
+        LOG_WARN_S<<"Gain boost could not be set to: "<<boost;
+        return false;
+    }
+
+    return true;
+}
+
 //==============================================================================
 bool CamIds::isAttribAvail(const int_attrib::CamAttrib attrib) {
     switch (attrib) {
