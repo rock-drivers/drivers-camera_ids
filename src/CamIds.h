@@ -84,6 +84,7 @@ protected:
             const int timeout );
     bool setFrameAttrPixelClock(base::samples::frame::Frame &frame);
     bool setFrameAttrExposure(base::samples::frame::Frame &frame);
+    bool setFrameAttrGain(base::samples::frame::Frame &frame);
     bool waitForNextImage(int timeout, char** ppcMem, int* p_img_id);
     bool retrieveOldestNewFrameContinuousMode(base::samples::frame::Frame& frame,
             const int timeout);

@@ -654,8 +654,8 @@ bool CamIds::retrieveFrameContinuousMode( base::samples::frame::Frame& frame,
         mLastFrameCount = imgInfo.u64FrameNumber;
 
         setFrameAttrExposure(frame);
-
         setFrameAttrPixelClock(frame);
+        setFrameAttrGain(frame);
 
         is_UnlockSeqBuf(*this->pCam_, inum, plast);
 
@@ -686,6 +686,11 @@ bool CamIds::setFrameAttrExposure(base::samples::frame::Frame &frame) {
         LOG_WARN_S<<"could not access the current exposure time";
         return false;
     }
+}
+
+bool CamIds::setFrameAttrGain(base::samples::frame::Frame &frame) {
+    int gain = is_SetHardwareGain(*(this->pCam_), IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
+    frame.setAttribute<double>("Gain", gain);
 }
 
 /** A wrapper for is_WatiForNextImage to get all the messages out. */
@@ -791,9 +796,8 @@ bool CamIds::retrieveOldestNewFrameContinuousMode( base::samples::frame::Frame& 
     mLastFrameCount = imgInfo.u64FrameNumber;
 
     setFrameAttrExposure(frame);
-
     setFrameAttrPixelClock(frame);
-
+    setFrameAttrGain(frame);
 
     is_UnlockSeqBuf(*this->pCam_, IS_IGNORE_PARAMETER, pcMem);
 
@@ -1208,8 +1212,25 @@ bool CamIds::setAttrib(const int_attrib::CamAttrib attrib, const int value) {
             }
             break;
         case int_attrib::GainValue:
-            if (IS_SUCCESS != is_SetHardwareGain(*this->pCam_, value, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER)) {
-                throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set gain factor value");
+            {
+                // get the current auto gain status
+                double isautogain;
+                if(is_SetAutoParameter(*(this->pCam_), IS_GET_ENABLE_AUTO_GAIN, &isautogain, NULL) != IS_SUCCESS) {
+                    throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to retrieve auto gain status");
+                }
+
+                // prevent setting of gain value, when auto gain is enabled
+                if(isautogain == false) {
+                    if (IS_SUCCESS != is_SetHardwareGain(*this->pCam_, value, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER)) {
+                        throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unable to set gain factor value");
+                    }
+                    else {
+                        LOG_INFO_S<<"Set gain to: "<<value;
+                    }
+                }
+                else {
+                    LOG_WARN_S<<"Auto gain enabled. Ignoring gain value: "<<value;
+                }
             }
             break;
         case int_attrib::GainAutoMax:
@@ -1434,6 +1455,28 @@ bool CamIds::setAttrib(const enum_attrib::CamAttrib attrib) {
         }
         LOG_INFO_S << "Set exposure to manual.";
         break;
+    case enum_attrib::GainModeToAuto:
+        {
+            double autogain = true;
+            if(is_SetAutoParameter(*(this->pCam_), IS_SET_ENABLE_AUTO_GAIN, &autogain, NULL) != IS_SUCCESS) {
+                LOG_ERROR_S<<"Unable to enable auto gain";
+            }
+            else {
+                LOG_INFO_S<<"Auto gain enabled";
+            }
+        }
+        break;
+    case enum_attrib::GainModeToManual:
+        {
+            double autogain = false;
+            if(is_SetAutoParameter(*(this->pCam_), IS_SET_ENABLE_AUTO_GAIN, &autogain, NULL) != IS_SUCCESS) {
+                LOG_ERROR_S<<"Unable to disable auto gain";
+            }
+            else {
+                LOG_INFO_S<<"Auto gain disabled";
+            }
+        }
+        break;
     default:
         throw std::runtime_error(std::string(BOOST_CURRENT_FUNCTION) + ": unknown attribute");
         break;
@@ -1517,6 +1560,8 @@ bool CamIds::isAttribAvail(const enum_attrib::CamAttrib attrib) {
     case enum_attrib::FrameStartTriggerModeToFixedRate:
     case enum_attrib::ExposureModeToAuto:
     case enum_attrib::ExposureModeToManual:
+    case enum_attrib::GainModeToAuto:
+    case enum_attrib::GainModeToManual:
         return true;
         break;
     default:
