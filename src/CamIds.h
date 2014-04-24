@@ -93,8 +93,8 @@ protected:
 
     INT BinningXFactorToMode( int factor );
     INT BinningYFactorToMode( int factor );
-    void setBinningX( int factor ); 
-    void setBinningY( int factor ); 
+    void setBinningX( int factor );
+    void setBinningY( int factor );
 
 public:
     //======================================================================
@@ -258,6 +258,34 @@ public:
      * @return true if gain boost was successfully set
      */
     bool setGainBoost(const bool boost=true);
+
+    /**
+     * Sets the gain for the red color channel
+     * @param gain value for the red channel (0-100)
+     * @return true if gain value could be set successfully
+     */
+    bool setGainRed(const unsigned int gain);
+
+    /**
+     * Sets the gain for the green color channel
+     * @param gain value for the green channel (0-100)
+     * @return true if gain value could be set successfully
+     */
+    bool setGainGreen(const unsigned gain);
+
+    /**
+     * Sets the gain for the blue color channel
+     * @param gain value for the blue channel (0-100)
+     * @return true if gain value could be set successfully
+     */
+    bool setGainBlue(const unsigned int gain);
+
+    /**
+     * Sets the gain per color channel
+     * @param gain value for gain of channel (0-100)
+     * @param channel number of color channel (0: red, 1: green, 2: blue)
+     */
+    bool setGainChannel(const unsigned int gain, const unsigned int channel);
 
     /**
      * Checks if an integer attribute is available.

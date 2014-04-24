@@ -1506,6 +1506,36 @@ bool CamIds::setGainBoost(const bool boost) {
     return true;
 }
 
+bool CamIds::setGainRed(const unsigned int gain) {
+    return setGainChannel(gain, 0);
+}
+
+bool CamIds::setGainGreen(const unsigned int gain) {
+    return setGainChannel(gain, 1);
+}
+
+bool CamIds::setGainBlue(const unsigned int gain) {
+    return setGainChannel(gain, 2);
+}
+
+bool CamIds::setGainChannel(const unsigned int gain, const unsigned int channel) {
+
+    unsigned int chg[3]; // gain per channel
+
+    std::fill_n(chg, 3, IS_IGNORE_PARAMETER);
+    chg[channel] = gain;
+
+    if(is_SetHardwareGain(*(this->pCam_), IS_IGNORE_PARAMETER, chg[0], chg[1], chg[2]) != IS_SUCCESS) {
+        LOG_WARN_S<<"Could not set gain "<<gain<<" for channel "<<channel;
+        return false;
+    }
+    else {
+        LOG_INFO_S<<"Set gain on channel "<<channel<<" to "<<gain;
+    }
+
+    return true;
+}
+
 //==============================================================================
 bool CamIds::isAttribAvail(const int_attrib::CamAttrib attrib) {
     switch (attrib) {
