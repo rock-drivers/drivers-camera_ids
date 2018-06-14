@@ -6,10 +6,10 @@
  */
 
 #include "CamIds.h"
-#include <base/time.h>
+#include <base/Time.hpp>
 #include <iostream>
 #include <boost/current_function.hpp>
-#include <base/logging.h>
+#include <base-logging/Logging.hpp>
 
 using namespace base::samples::frame;
 
