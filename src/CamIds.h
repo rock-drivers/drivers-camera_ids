@@ -12,7 +12,7 @@
 #include <camera_interface/CamInterface.h>  
 #include <camera_interface/CamInfoUtils.h>                 
 
-#include <base/samples/frame.h>
+#include <base/samples/Frame.hpp>
 #include <ueye.h>                           // API for the IDS cameras
 #include "CamTypes.h"
 
